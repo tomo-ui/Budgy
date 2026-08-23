@@ -101,6 +101,29 @@ button{cursor:pointer;border:none;background:none}
 .leg-name{font-size:13px;color:var(--text2);flex:1;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .leg-val{font-size:13px;font-weight:600;color:var(--text);flex-shrink:0}
+/* ── DONUT LOADING (premium) ── */
+@keyframes chartShimmer{0%{background-position:-150px 0}100%{background-position:150px 0}}
+.chart-skel{width:110px;height:110px;border-radius:50%;flex-shrink:0;
+  background:linear-gradient(90deg,var(--g5) 25%,var(--g6) 37%,var(--g5) 63%);
+  background-size:400px 100%;animation:chartShimmer 1.3s ease-in-out infinite;
+  -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 14px),#000 calc(100% - 14px));
+  mask:radial-gradient(farthest-side,transparent calc(100% - 14px),#000 calc(100% - 14px));
+}
+.legend-skel{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px}
+.leg-skel-line{height:12px;border-radius:6px;
+  background:linear-gradient(90deg,var(--g5) 25%,var(--g6) 37%,var(--g5) 63%);
+  background-size:400px 100%;animation:chartShimmer 1.3s ease-in-out infinite}
+.leg-skel-line:nth-child(1){width:72%}
+.leg-skel-line:nth-child(2){width:58%}
+.leg-skel-line:nth-child(3){width:65%}
+.donut-slice{transition:stroke-dasharray .85s cubic-bezier(.22,1,.36,1)}
+@keyframes legIn{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:translateX(0)}}
+.leg-in{opacity:0;animation:legIn .45s ease forwards}
+@media(prefers-reduced-motion:reduce){
+  .chart-skel,.leg-skel-line{animation:none}
+  .donut-slice{transition:none}
+  .leg-in{animation:none;opacity:1}
+}
 /* ── CATEGORY SECTION ── */
 .cat-section{margin-bottom:8px}
 .cat-header{
@@ -246,6 +269,8 @@ select{cursor:pointer}
   padding:15px 32px;font-size:17px;font-weight:600;
   box-shadow:0 6px 20px rgba(0,122,255,.35);transition:all .15s}
 .big-btn:active{transform:scale(.97);opacity:.9}
+.big-btn-green{background:var(--green);box-shadow:0 6px 20px rgba(52,199,89,.4)}
+.big-btn-purple{background:var(--purple);box-shadow:0 6px 20px rgba(175,82,222,.4)}
 /* ── ONBOARDING ── */
 .onb{display:flex;flex-direction:column;align-items:center;
   justify-content:center;min-height:100dvh;padding:40px 24px;background:var(--bg)}
@@ -335,6 +360,88 @@ select{cursor:pointer}
   display:flex;align-items:center;justify-content:center;font-size:40px}
 .av-name{font-size:22px;font-weight:700;color:var(--text)}
 .av-sub{font-size:14px;color:var(--text3)}
+/* ══════════════════════════════════════════════════════
+   ══ PREMIUM 2026 POLISH — animations, depth, motion ══
+   ══════════════════════════════════════════════════════ */
+
+/* Smoother screen transition with subtle depth */
+@keyframes sIn{from{transform:translateX(100%) scale(.98);opacity:.5}to{transform:none;opacity:1}}
+@keyframes sBk{from{transform:translateX(-24%) scale(.98);opacity:.5}to{transform:none;opacity:1}}
+
+/* Staggered entrance for cards on every screen */
+@keyframes cardPop{from{opacity:0;transform:translateY(14px) scale(.965)}to{opacity:1;transform:none}}
+.sp>*{animation:cardPop .52s cubic-bezier(.22,1,.36,1) both}
+.sp>*:nth-child(1){animation-delay:.01s}
+.sp>*:nth-child(2){animation-delay:.05s}
+.sp>*:nth-child(3){animation-delay:.09s}
+.sp>*:nth-child(4){animation-delay:.13s}
+.sp>*:nth-child(5){animation-delay:.17s}
+.sp>*:nth-child(6){animation-delay:.21s}
+.sp>*:nth-child(7){animation-delay:.25s}
+.sp>*:nth-child(8){animation-delay:.29s}
+.sp>*:nth-child(9){animation-delay:.33s}
+.sp>*:nth-child(10){animation-delay:.37s}
+.sp>*:nth-child(n+11){animation-delay:.4s}
+
+/* Richer, layered shadow language */
+:root{--sh:0 1px 1px rgba(0,0,0,.03),0 10px 26px rgba(0,0,0,.07),0 2px 6px rgba(0,0,0,.045)}
+
+/* Rounder, glassier cards with a soft top highlight (iOS-glass feel) */
+.card{border-radius:18px;box-shadow:var(--sh),inset 0 1px 0 rgba(255,255,255,.55)}
+.cat-header{border-radius:18px;box-shadow:var(--sh),inset 0 1px 0 rgba(255,255,255,.55)}
+.cat-items{border-radius:0 0 18px 18px}
+.sav-card{border-radius:20px;box-shadow:var(--sh),inset 0 1px 0 rgba(255,255,255,.55)}
+.hero{border-radius:24px;position:relative;overflow:hidden}
+@media(prefers-color-scheme:dark){
+  .card,.cat-header,.sav-card{box-shadow:var(--sh),inset 0 1px 0 rgba(255,255,255,.06)}
+}
+
+/* Diagonal glass sheen across hero balance card */
+.hero::before{content:'';position:absolute;top:-70%;left:-25%;width:65%;height:240%;
+  background:linear-gradient(120deg,rgba(255,255,255,.22),rgba(255,255,255,0) 65%);
+  transform:rotate(12deg);pointer-events:none}
+
+/* Spring physics on tap for a "juicy" premium feel */
+.row.tap{transition:background .12s ease,transform .22s cubic-bezier(.34,1.56,.64,1)}
+.row.tap:active{transform:scale(.985)}
+.big-btn{transition:transform .22s cubic-bezier(.34,1.56,.64,1),box-shadow .22s,opacity .15s}
+.big-btn:active{transform:scale(.955);opacity:.92}
+.cat-header{transition:opacity .12s ease,transform .22s cubic-bezier(.34,1.56,.64,1)}
+.cat-header:active{transform:scale(.98);opacity:.85}
+.sav-add-btn{transition:transform .22s cubic-bezier(.34,1.56,.64,1),opacity .15s}
+.sav-add-btn:active{transform:scale(.82)}
+.emoji-opt,.color-swatch{transition:transform .18s cubic-bezier(.34,1.56,.64,1),background .15s,box-shadow .15s}
+.month-pick-item,.cat-pick-item{transition:transform .18s cubic-bezier(.34,1.56,.64,1),opacity .12s}
+.month-pick-item:active,.cat-pick-item:active{transform:scale(.96);opacity:.85}
+.nb-btn{transition:opacity .15s,transform .18s cubic-bezier(.34,1.56,.64,1)}
+.nb-btn:active{transform:scale(.92)}
+
+/* Shimmering progress bars */
+.prog-bar{position:relative;overflow:hidden}
+.prog-bar::after{content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.4),transparent);
+  transform:translateX(-100%);animation:shimmer 2.4s ease-in-out infinite}
+@keyframes shimmer{0%{transform:translateX(-100%)}55%,100%{transform:translateX(100%)}}
+
+/* Sliding pill indicator under the active tab */
+.tabs{position:relative}
+.tab-indicator{position:absolute;left:0;bottom:0;width:25%;height:2.5px;border-radius:2px;
+  background:linear-gradient(90deg,var(--blue),#5AC8FA);
+  transition:transform .34s cubic-bezier(.34,1.56,.64,1)}
+.tab.active{border-bottom-color:transparent}
+.tab{transition:color .2s ease}
+
+/* Smoother, springier modal sheet */
+.sheet{transition:transform .42s cubic-bezier(.32,1.3,.34,1)}
+.sh-cancel{transition:transform .18s cubic-bezier(.34,1.56,.64,1),opacity .15s}
+.sh-cancel:active{transform:scale(.97)}
+
+/* Respect reduced-motion preferences */
+@media(prefers-reduced-motion:reduce){
+  .sp>*{animation:none}
+  .prog-bar::after{animation:none}
+  .hero::before{display:none}
+}
 </style>
 </head>
 <body>
@@ -445,7 +552,7 @@ const MONTHS=['Styczeń','Luty','Marzec','Kwiecień','Maj','Czerwiec',
 
 /* ══ DATA ══ */
 let D={categories:[...DEF_CATS],months:{}};
-let S={defaultIncome:0,savingsTarget:0,_setup:false};
+let S={defaultIncome:0,savingsTarget:0,_setup:false,priceMemory:{}};
 
 function load(){
   try{D=JSON.parse(localStorage.getItem(EK)||'null')||{categories:[...DEF_CATS],months:{}};}catch(e){}
@@ -453,6 +560,16 @@ function load(){
   if(!D.months)D.months={};
   D.categories.forEach(c=>{c.icon=migrateIcon(c.icon);});
   try{S={...S,...JSON.parse(localStorage.getItem(SK)||'{}')};}catch(e){}
+  if(!S.priceMemory)S.priceMemory={};
+  /* migracja starego formatu oszczędności {target,actual} -> {entries:[]} */
+  Object.keys(D.months).forEach(k=>{
+    const m=D.months[k];
+    if(m.savings&&!Array.isArray(m.savings.entries)){
+      const oldActual=m.savings.actual||0;
+      m.savings={entries:oldActual>0?[{id:gid(),amount:oldActual,date:`${k}-01`,note:'Zaimportowano'}]:[]};
+    }
+    if(!m.savings)m.savings={entries:[]};
+  });
 }
 function save(){localStorage.setItem(EK,JSON.stringify(D));}
 function saveS(){localStorage.setItem(SK,JSON.stringify(S));}
@@ -460,7 +577,8 @@ function gid(){return Date.now().toString(36)+Math.random().toString(36).slice(2
 
 /* Month init */
 function ensureMonth(key){
-  if(!D.months[key])D.months[key]={income:[],expenses:[],savings:{target:S.savingsTarget||0,actual:0}};
+  if(!D.months[key])D.months[key]={income:[],expenses:[],savings:{entries:[]}};
+  if(!D.months[key].savings)D.months[key].savings={entries:[]};
   return D.months[key];
 }
 function mData(key){return ensureMonth(key);}
@@ -468,7 +586,9 @@ function mData(key){return ensureMonth(key);}
 /* Aggregates */
 function totalIncome(key){return(D.months[key]?.income||[]).reduce((s,i)=>s+i.amount,0);}
 function totalExpActual(key){return(D.months[key]?.expenses||[]).reduce((s,e)=>s+e.actual,0);}
-function balance(key){return totalIncome(key)-totalExpActual(key)-(D.months[key]?.savings?.actual||0);}
+function monthSavingsTotal(key){return(D.months[key]?.savings?.entries||[]).reduce((s,x)=>s+x.amount,0);}
+function allSavingsTotal(){return Object.keys(D.months).reduce((s,k)=>s+monthSavingsTotal(k),0);}
+function balance(key){return totalIncome(key)-totalExpActual(key)-monthSavingsTotal(key);}
 function catExpenses(key,catId){
   return(D.months[key]?.expenses||[]).filter(e=>e.catId===catId);
 }
@@ -488,7 +608,7 @@ function fmtDate(ds){if(!ds)return'';const[y,m,d]=ds.split('-').map(Number);retu
 function catById(id){return D.categories.find(c=>c.id===id)||{name:'?',icon:'box',color:'#8E8E93'};}
 function allMonthKeys(){
   return Object.keys(D.months).filter(k=>
-    D.months[k].income.length||D.months[k].expenses.length||D.months[k].savings.actual)
+    D.months[k].income.length||D.months[k].expenses.length||(D.months[k].savings?.entries||[]).length)
   .sort((a,b)=>b.localeCompare(a));
 }
 
@@ -519,7 +639,7 @@ function render(sc,p,dir='push'){
     case 'month':    renderMonth(p.key,p.tab||'overview');break;
     case 'f-income': renderFIncome(p);break;
     case 'f-expense':renderFExpense(p);break;
-    case 'f-savings':renderFSavings(p);break;
+    case 'f-savings-entry':renderFSavingsEntry(p);break;
     case 'categories':renderCategories();break;
     case 'f-cat':    renderFCat(p);break;
     case 'settings': renderSettings();break;
@@ -541,17 +661,74 @@ function nb({back,left,title,large,right}={}){
     +(large?`<div class="nb-large">${large}</div>`:'');
 }
 
+/* ══ COUNT-UP ANIMATION ══ */
+function animateCountUps(root){
+  const reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  (root||document).querySelectorAll('[data-cu]').forEach(el=>{
+    const end=parseFloat(el.getAttribute('data-cu'));
+    if(isNaN(end))return;
+    const signed=el.getAttribute('data-cu-fmt')==='signed';
+    if(reduce){el.textContent=signed?fmtMoney(end):fmtMoneyAbs(end);return;}
+    const dur=620,t0=performance.now();
+    function step(t){
+      const p=Math.min(1,(t-t0)/dur);
+      const eased=1-Math.pow(1-p,3);
+      const val=end*eased;
+      el.textContent=signed?fmtMoney(val):fmtMoneyAbs(val);
+      if(p<1)requestAnimationFrame(step);
+      else el.textContent=signed?fmtMoney(end):fmtMoneyAbs(end);
+    }
+    requestAnimationFrame(step);
+  });
+}
+
 /* ══ SVG DONUT ══ */
-function donutSvg(slices,total,size=110){
+function donutSvg(slices,total,size=110,animate=false){
   if(!total)return`<svg width="${size}" height="${size}" viewBox="0 0 110 110"><circle cx="55" cy="55" r="40" fill="none" stroke="#E5E5EA" stroke-width="14"/></svg>`;
   const r=40,cx=55,cy=55,C=2*Math.PI*r;
   let off=0;
-  const paths=slices.map(s=>{
+  const paths=slices.map((s,idx)=>{
     const pct=s.val/total,dash=pct*C,gap=C-dash;
-    const d=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${s.color}" stroke-width="14" stroke-dasharray="${dash.toFixed(2)} ${gap.toFixed(2)}" stroke-dashoffset="${(-off*C).toFixed(2)}" transform="rotate(-90 ${cx} ${cy})"/>`;
+    const targetDash=`${dash.toFixed(2)} ${gap.toFixed(2)}`;
+    const initDash=animate?`0 ${C.toFixed(2)}`:targetDash;
+    const cls=animate?' class="donut-slice"':'';
+    const style=animate?` style="transition-delay:${idx*90}ms"`:'';
+    const dataDash=animate?` data-dash="${targetDash}"`:'';
+    const d=`<circle${cls}${style}${dataDash} cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${s.color}" stroke-width="14" stroke-dasharray="${initDash}" stroke-dashoffset="${(-off*C).toFixed(2)}" transform="rotate(-90 ${cx} ${cy})"/>`;
     off+=pct;return d;
   }).join('');
   return`<svg width="${size}" height="${size}" viewBox="0 0 110 110" style="flex-shrink:0">${paths}</svg>`;
+}
+
+/* ── DONUT: animated "loading" reveal (premium polish) ── */
+function initDonutAnimation(){
+  const wrap=document.getElementById('donutWrap');
+  if(!wrap)return;
+  const slices=window._ovSlices||[];
+  const total=window._ovExp||0;
+  const reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const delay=reduce?0:550;
+  setTimeout(()=>{
+    const w=document.getElementById('donutWrap');
+    if(!w)return; // user navigated away while "loading"
+    let legendHtml='';
+    slices.slice(0,5).forEach((s,idx)=>{
+      const cat=catById(s.id);
+      legendHtml+=`<div class="leg-item${reduce?'':' leg-in'}" style="animation-delay:${idx*70}ms">
+        <div class="leg-dot" style="background:${cat.color}"></div>
+        <span class="leg-name">${esc(cat.name)}</span>
+        <span class="leg-val">${fmtMoneyAbs(s.val)}</span>
+      </div>`;
+    });
+    w.innerHTML=`${donutSvg(slices,total,110,!reduce)}<div class="legend">${legendHtml}</div>`;
+    if(!reduce){
+      requestAnimationFrame(()=>{
+        requestAnimationFrame(()=>{
+          w.querySelectorAll('.donut-slice').forEach(c=>{c.setAttribute('stroke-dasharray',c.dataset.dash);});
+        });
+      });
+    }
+  },delay);
 }
 
 /* ══ SWIPE TO DELETE ══ */
@@ -606,14 +783,21 @@ function initSwipes(){
 function renderMonths(){
   nb({large:LOGO_SVG,right:{html:ICO_GEAR,fn:"push('settings',{})"}});
   const keys=allMonthKeys();
-  const totalSavAll=Object.values(D.months).reduce((s,m)=>s+(m.savings?.actual||0),0);
-  const pinHtml=totalSavAll>0?`<div class="sav-pin">
-      <div>
-        <div class="sav-pin-lbl">Oszczędności łącznie</div>
-        <div class="sav-pin-val">${fmtMoneyAbs(totalSavAll)}</div>
+  const totalSavAll=allSavingsTotal();
+  const target=S.savingsTarget||0;
+  const savPct=target>0?Math.min(100,Math.round(totalSavAll/target*100)):0;
+  const pinHtml=`<div class="sav-card mt" style="margin:0 16px 12px;cursor:pointer" onclick="showEditSavingsGoal()">
+      <div class="sav-title">Oszczędności w sumie</div>
+      <div class="sav-sub">${target>0?'Cel: '+fmtMoneyAbs(target):'Stuknij, aby ustawić cel'}</div>
+      ${target>0?`<div class="prog-wrap mt"><div class="prog-bar" style="width:${savPct}%;background:var(--purple)"></div></div>`:''}
+      <div class="sav-nums" style="margin-top:${target>0?'0':'2px'}">
+        <span class="sav-actual" data-cu="${totalSavAll}">${fmtMoneyAbs(totalSavAll)}</span>
+        <div class="sav-pct-row">
+          ${target>0?`<span class="sav-pct">${savPct}%</span>`:''}
+          <div class="sav-add-btn" style="background:var(--purple)" title="Ustaw cel">${icon('piggy',15)}</div>
+        </div>
       </div>
-      <div class="sav-pin-ic">${icon('piggy',22)}</div>
-    </div>`:'';
+    </div>`;
   if(!keys.length){
     document.getElementById('sc').innerHTML=`
     <div class="sp">
@@ -622,15 +806,16 @@ function renderMonths(){
         <div class="empty-icon">${ICO_WALLET}</div>
         <div class="empty-title">Brak danych</div>
         <p class="empty-sub">Dodaj pierwszy miesiąc, żeby zacząć śledzić swój budżet.</p>
-        <button class="big-btn" onclick="newMonth()">+ Nowy miesiąc</button>
+        <button class="big-btn big-btn-green" onclick="newMonth()">+ Nowy miesiąc</button>
       </div>
     </div>`;
+    animateCountUps();
     return;
   }
   let html='<div class="sp">'+pinHtml;
   keys.forEach(key=>{
     const inc=totalIncome(key),exp=totalExpActual(key);
-    const sav=D.months[key]?.savings?.actual||0;
+    const sav=monthSavingsTotal(key);
     const bal=inc-exp-sav;
     const cls=bal>0?'m-pos':bal<0?'m-neg':'m-zero';
     const heroCls=bal>0?'':'neg';
@@ -663,8 +848,31 @@ function renderMonths(){
       </div>
     </div>`;
   });
-  html+=`<div style="padding:16px 16px 0"><button class="big-btn" style="width:100%;background:var(--green)" onclick="newMonth()">+ Nowy miesiąc</button></div></div>`;
+  html+=`<div style="padding:16px 16px 0"><button class="big-btn big-btn-green" style="width:100%" onclick="newMonth()">+ Nowy miesiąc</button></div></div>`;
   document.getElementById('sc').innerHTML=html;
+  animateCountUps();
+}
+
+function showEditSavingsGoal(){
+  document.getElementById('msh').innerHTML=`
+    <div class="sh-handle"></div>
+    <div class="sh-title">Cel oszczędności</div>
+    <div class="card" style="margin-bottom:14px">
+      <div class="row"><span class="fl">Cel</span>
+        <div class="fr"><input type="number" id="sg-target" min="0" step="1" value="${S.savingsTarget||0}">
+          <span class="fu">zł</span></div></div>
+    </div>
+    <button class="big-btn" style="width:100%;background:var(--purple);margin-bottom:10px" onclick="submitSavingsGoal()">Zapisz</button>
+    <button class="sh-cancel" onclick="closeMod()">Anuluj</button>`;
+  document.getElementById('modal').classList.add('open');
+  setTimeout(()=>document.getElementById('sg-target')?.focus(),200);
+}
+function submitSavingsGoal(){
+  S.savingsTarget=parseFloat(document.getElementById('sg-target').value)||0;
+  saveS();
+  document.getElementById('modal').classList.remove('open');
+  showToast('Cel zapisany ✓');
+  renderMonths();
 }
 
 function newMonth(){
@@ -678,7 +886,7 @@ function showMonthPicker(year){
   for(let m=0;m<12;m++){
     const key=`${year}-${String(m+1).padStart(2,'0')}`;
     const md=D.months[key];
-    const has=!!(md&&(md.income.length||md.expenses.length||md.savings.actual));
+    const has=!!(md&&(md.income.length||md.expenses.length||(md.savings?.entries||[]).length));
     const isCur=key===curKey;
     grid+=`<div class="month-pick-item${isCur?' cur':''}${has?' has':''}" onclick="openMonth('${key}');closeMod()">${MONTHS[m]}</div>`;
   }
@@ -701,12 +909,15 @@ function openMonth(key){
 /* ══ SCREEN: MONTH DETAIL ══ */
 function renderMonth(key,tab='overview'){
   const inc=totalIncome(key),exp=totalExpActual(key);
-  const sav=D.months[key]?.savings?.actual||0;
+  const sav=monthSavingsTotal(key);
   const bal=inc-exp-sav;
   nb({back:{fn:'pop()',label:'Wstecz'},title:monthLabel(key),
     right:{html:ICO_PLUS,fn:`showAddMenu('${key}')`,bold:false}});
 
+  const tabOrder=['overview','expenses','income','savings'];
+  const tIdx=Math.max(0,tabOrder.indexOf(tab));
   const tabs=`<div class="tabs">
+    <div class="tab-indicator" style="transform:translateX(${tIdx*100}%)"></div>
     <div class="tab${tab==='overview'?' active':''}" onclick="switchTab('${key}','overview')">Przegląd</div>
     <div class="tab${tab==='expenses'?' active':''}" onclick="switchTab('${key}','expenses')">Wydatki</div>
     <div class="tab${tab==='income'?' active':''}" onclick="switchTab('${key}','income')">Przychody</div>
@@ -721,7 +932,9 @@ function renderMonth(key,tab='overview'){
 
   document.getElementById('sc').innerHTML=tabs+`<div class="sp">${body}</div>`;
   initSwipes();
+  animateCountUps();
   if(tab==='expenses')initCatToggle();
+  if(tab==='overview')initDonutAnimation();
 }
 
 function switchTab(key,tab){
@@ -741,9 +954,7 @@ function buildOverview(key,bal,inc,exp,sav){
   });
   const slices=Object.entries(catTotals).map(([id,val])=>({id,val,color:catById(id).color}))
     .sort((a,b)=>b.val-a.val);
-
-  const savData=D.months[key]?.savings||{target:0,actual:0};
-  const savPct=savData.target>0?Math.min(100,Math.round(savData.actual/savData.target*100)):0;
+  window._ovSlices=slices;window._ovExp=exp;
 
   let legendHtml='';
   slices.slice(0,5).forEach(s=>{
@@ -762,7 +973,7 @@ function buildOverview(key,bal,inc,exp,sav){
   <!-- HERO BALANCE -->
   <div class="${bal>=0?'hero':'hero neg'}">
     <div class="hero-label">Bilans miesiąca</div>
-    <div class="hero-amount">${fmtMoney(bal)}</div>
+    <div class="hero-amount" data-cu="${bal}" data-cu-fmt="signed">${fmtMoney(bal)}</div>
     <div class="hero-row">
       <div class="hero-col">
         <div class="hero-col-label">Przychody</div>
@@ -797,32 +1008,28 @@ function buildOverview(key,bal,inc,exp,sav){
     </div>
   </div>`:''}
 
-  <!-- DONUT CHART -->
+  <!-- SAVINGS MINI -->
+  <p class="sh">Oszczędności</p>
+  <div class="sav-card">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div class="sav-title">Odłożono w tym miesiącu</div>
+        <div class="sav-actual" style="margin-top:4px" data-cu="${sav}">${fmtMoneyAbs(sav)}</div>
+      </div>
+      <div class="sav-add-btn" onclick="showAddToSavings('${key}')" title="Dodaj wpłatę">${icon('piggy',16)}</div>
+    </div>
+  </div>
+
+  <!-- DONUT CHART (loads in with an animated reveal) -->
   ${slices.length?`<p class="sh">Rozkład wydatków</p>
   <div class="card">
-    <div class="chart-wrap">
-      ${donutSvg(slices,exp)}
-      <div class="legend">${legendHtml}</div>
-    </div>
-  </div>`:''}
-
-  <!-- SAVINGS MINI -->
-  ${savData.target>0?`<p class="sh">Oszczędności</p>
-  <div class="sav-card">
-    <div style="display:flex;justify-content:space-between;margin-bottom:10px">
-      <div>
-        <div class="sav-title">Cel oszczędności</div>
-        <div class="sav-sub">Cel: ${fmtMoneyAbs(savData.target)}</div>
+    <div class="chart-wrap" id="donutWrap">
+      <div class="chart-skel"></div>
+      <div class="legend-skel">
+        <div class="leg-skel-line"></div>
+        <div class="leg-skel-line"></div>
+        <div class="leg-skel-line"></div>
       </div>
-      <div class="sav-pct-row">
-        <span class="sav-pct">${savPct}%</span>
-        <div class="sav-add-btn" onclick="showAddToSavings('${key}')" title="Dodaj do skarbonki">${icon('plus',16)}</div>
-      </div>
-    </div>
-    <div class="prog-wrap"><div class="prog-bar" style="width:${savPct}%;background:var(--purple)"></div></div>
-    <div class="sav-nums">
-      <span class="sav-actual">${fmtMoneyAbs(savData.actual)}</span>
-      <span class="sav-target">z ${fmtMoneyAbs(savData.target)}</span>
     </div>
   </div>`:''}
 
@@ -839,9 +1046,9 @@ function buildOverview(key,bal,inc,exp,sav){
       <span style="font-size:16px;color:var(--text);font-weight:500;flex:1">Dodaj wydatek</span>
       <div class="chev">${ICO_CHEV}</div>
     </div>
-    <div class="row tap" onclick="push('f-savings',{monthKey:'${key}'})">
+    <div class="row tap" onclick="showAddToSavings('${key}')">
       <span style="width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;margin-right:12px;color:var(--purple)">${ICO_BANK}</span>
-      <span style="font-size:16px;color:var(--text);font-weight:500;flex:1">Edytuj oszczędności</span>
+      <span style="font-size:16px;color:var(--text);font-weight:500;flex:1">Dodaj oszczędność</span>
       <div class="chev">${ICO_CHEV}</div>
     </div>
   </div>`;
@@ -979,33 +1186,56 @@ function buildIncome(key){
 
 /* ── SAVINGS TAB ── */
 function buildSavings(key){
-  const sav=D.months[key]?.savings||{target:0,actual:0};
-  const pct=sav.target>0?Math.min(100,Math.round(sav.actual/sav.target*100)):0;
+  const entries=(D.months[key]?.savings?.entries||[]).slice()
+    .sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.id.localeCompare(a.id));
+  const total=entries.reduce((s,x)=>s+x.amount,0);
   const inc=totalIncome(key),exp=totalExpActual(key);
-  const avail=Math.max(0,inc-exp);
-  return `
+
+  let html=`
   <div class="sav-card">
-    <div class="sav-title">Oszczędności</div>
-    <div class="sav-sub">Cel miesięczny: ${fmtMoneyAbs(sav.target)}</div>
-    <div class="prog-wrap mt"><div class="prog-bar" style="width:${pct}%;background:var(--purple)"></div></div>
-    <div class="sav-nums" style="margin-bottom:16px">
-      <span class="sav-actual">${fmtMoneyAbs(sav.actual)}</span>
-      <div class="sav-pct-row">
-        <span class="sav-pct">${pct}%</span>
-        <div class="sav-add-btn" onclick="showAddToSavings('${key}')" title="Dodaj do skarbonki">${icon('plus',16)}</div>
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div class="sav-title">Odłożono w tym miesiącu</div>
+        <div class="sav-actual" style="margin-top:4px" data-cu="${total}">${fmtMoneyAbs(total)}</div>
       </div>
+      <div class="sav-add-btn" onclick="showAddToSavings('${key}')" title="Dodaj wpłatę">${icon('plus',16)}</div>
     </div>
-    <button class="big-btn" style="width:100%;background:var(--purple)" onclick="push('f-savings',{monthKey:'${key}'})">
-      Edytuj oszczędności
-    </button>
-  </div>
-  <p class="sh">Podsumowanie</p>
+  </div>`;
+
+  if(entries.length){
+    html+=`<p class="sh">Wpisy</p><div class="card">`;
+    entries.forEach(en=>{
+      html+=`<div class="income-row" data-swipe>
+        <div class="inc-content" data-swipe-content onclick="push('f-savings-entry',{editId:'${en.id}',monthKey:'${key}'})">
+          <div class="inc-icon" style="background:rgba(175,82,222,.12);color:var(--purple)">${icon('piggy',16)}</div>
+          <div class="inc-info">
+            <div class="inc-name">${en.note?esc(en.note):'Wpłata do oszczędności'}</div>
+            ${en.date?`<div class="inc-date">${fmtDate(en.date)}</div>`:''}
+          </div>
+          <div class="inc-amount" style="color:var(--purple)">${fmtMoneyAbs(en.amount)}</div>
+        </div>
+        <div class="inc-del" data-swipe-del onclick="delSavingsEntry('${key}','${en.id}')">Usuń</div>
+      </div>`;
+    });
+    html+=`</div>`;
+  } else {
+    html+=`<div class="empty">
+      <div class="empty-icon" style="width:64px;height:64px;display:inline-flex;align-items:center;justify-content:center;color:var(--purple)">${icon('piggy',34)}</div>
+      <div class="empty-title">Brak wpisów</div>
+      <p class="empty-sub">Dodaj pierwszą wpłatę do oszczędności w tym miesiącu.</p>
+    </div>`;
+  }
+
+  html+=`<p class="sh">Podsumowanie miesiąca</p>
   <div class="card">
     <div class="row"><div class="rm"><div class="rt">Przychody</div></div><span style="font-size:16px;font-weight:700;color:var(--green)">${fmtMoneyAbs(inc)}</span></div>
     <div class="row"><div class="rm"><div class="rt">Wydatki</div></div><span style="font-size:16px;font-weight:700;color:var(--red)">${fmtMoneyAbs(exp)}</span></div>
-    <div class="row"><div class="rm"><div class="rt">Dostępne na oszczędności</div></div><span style="font-size:16px;font-weight:700;color:var(--blue)">${fmtMoneyAbs(avail)}</span></div>
-    <div class="row"><div class="rm"><div class="rt">Odłożono</div><div class="rmeta">${pct}% celu</div></div><span style="font-size:16px;font-weight:700;color:var(--purple)">${fmtMoneyAbs(sav.actual)}</span></div>
+    <div class="row"><div class="rm"><div class="rt">Odłożono</div></div><span style="font-size:16px;font-weight:700;color:var(--purple)">${fmtMoneyAbs(total)}</span></div>
+  </div>
+  <div style="padding:12px 16px 0">
+    <button class="big-btn big-btn-purple" style="width:100%" onclick="showAddToSavings('${key}')">+ Dodaj wpłatę</button>
   </div>`;
+  return html;
 }
 
 /* ══ FORMS ══ */
@@ -1084,12 +1314,29 @@ function showCatPickerForAdd(key){
   document.getElementById('modal').classList.add('open');
 }
 
+function nameSuggestions(catId){
+  return Object.keys(S.priceMemory?.[catId]||{});
+}
+function onFeCatChange(){
+  const catId=document.getElementById('fe-cat').value;
+  const dl=document.getElementById('fe-name-list');
+  if(dl)dl.innerHTML=nameSuggestions(catId).map(n=>`<option value="${esc(n)}"></option>`).join('');
+}
+function onFeNameInput(){
+  const catId=document.getElementById('fe-cat').value;
+  const name=document.getElementById('fe-name').value.trim();
+  const mem=S.priceMemory?.[catId];
+  if(mem&&Object.prototype.hasOwnProperty.call(mem,name)){
+    const amtEl=document.getElementById('fe-actual');
+    if(amtEl)amtEl.value=mem[name];
+  }
+}
 function renderFExpense({editId=null,monthKey=null,catId=null}={}){
   const isEd=!!editId;
   const m=D.months[monthKey]||{expenses:[]};
   const e=isEd?m.expenses.find(x=>x.id===editId):null;
   const defCatId=e?.catId||catId||D.categories[0]?.id;
-  window._fk={editId,monthKey,catId:defCatId};
+  window._fk={editId,monthKey,catId:defCatId,date:e?.date||today};
   nb({left:{label:'Anuluj',fn:'pop()'},
     title:isEd?'Edytuj wydatek':'Nowy wydatek',
     right:{html:isEd?'Zapisz':'Dodaj',fn:'submitExpense()',id:'sv',bold:true}});
@@ -1099,11 +1346,10 @@ function renderFExpense({editId=null,monthKey=null,catId=null}={}){
     <p class="sh">Kategoria i nazwa</p>
     <div class="card">
       <div class="row"><span class="fl">Kategoria</span>
-        <div class="fr"><select id="fe-cat" style="max-width:180px;color:var(--blue);font-size:16px">${catOpts}</select></div></div>
+        <div class="fr"><select id="fe-cat" style="max-width:180px;color:var(--blue);font-size:16px" onchange="onFeCatChange()">${catOpts}</select></div></div>
       <div class="row"><span class="fl">Nazwa</span>
-        <div class="fr"><input class="fi" id="fe-name" type="text" placeholder="np. Czynsz" value="${esc(e?.name||'')}"></div></div>
-      <div class="row"><span class="fl">Data</span>
-        <div class="fr"><input type="date" id="fe-date" value="${e?.date||today}"></div></div>
+        <div class="fr"><input class="fi" id="fe-name" list="fe-name-list" type="text" placeholder="np. Czynsz" value="${esc(e?.name||'')}" oninput="onFeNameInput()"></div></div>
+      <datalist id="fe-name-list">${nameSuggestions(defCatId).map(n=>`<option value="${esc(n)}"></option>`).join('')}</datalist>
     </div>
     <p class="sh">Kwota</p>
     <div class="card">
@@ -1124,7 +1370,7 @@ function submitExpense(){
   const catId=document.getElementById('fe-cat').value;
   const name=document.getElementById('fe-name').value.trim();
   const actual=parseFloat(document.getElementById('fe-actual').value)||0;
-  const date=document.getElementById('fe-date').value;
+  const date=k.date||today;
   const note=document.getElementById('fe-note').value.trim();
   if(!name){showToast('Podaj nazwę wydatku');return;}
   if(!actual){showToast('Podaj kwotę');return;}
@@ -1137,6 +1383,11 @@ function submitExpense(){
     m.expenses.push({id:gid(),catId,name,actual,planned:0,date,note});
     showToast('Wydatek dodany ✓');
   }
+  /* zapamiętaj (nadpisz) cenę dla tej nazwy w tej kategorii */
+  S.priceMemory=S.priceMemory||{};
+  S.priceMemory[catId]=S.priceMemory[catId]||{};
+  S.priceMemory[catId][name]=actual;
+  saveS();
   save();pop();setTimeout(()=>renderMonth(k.monthKey,'expenses'),50);
 }
 function delExpenseForm(){
@@ -1152,34 +1403,60 @@ function delExpense(key,id){
   save();showToast('Usunięto');renderMonth(key,'expenses');
 }
 
-/* ── SAVINGS FORM ── */
-function renderFSavings({monthKey}={}){
-  const sav=D.months[monthKey]?.savings||{target:0,actual:0};
-  window._fk={monthKey};
-  nb({left:{label:'Anuluj',fn:'pop()'},title:'Oszczędności',
-    right:{html:'Zapisz',fn:'submitSavings()',bold:true}});
+/* ── SAVINGS ENTRY FORM ── */
+function renderFSavingsEntry({editId=null,monthKey=null}={}){
+  const isEd=!!editId;
+  const m=D.months[monthKey]||{savings:{entries:[]}};
+  const e=isEd?(m.savings?.entries||[]).find(x=>x.id===editId):null;
+  window._fk={editId,monthKey,date:e?.date||today};
+  nb({left:{label:'Anuluj',fn:'pop()'},
+    title:isEd?'Edytuj wpis':'Nowa wpłata',
+    right:{html:isEd?'Zapisz':'Dodaj',fn:'submitSavingsEntry()',id:'sv',bold:true}});
   document.getElementById('sc').innerHTML=`
   <div class="sp">
-    <p class="sh">Oszczędności — ${monthLabel(monthKey)}</p>
+    <p class="sh">Wpłata — ${monthLabel(monthKey)}</p>
     <div class="card">
-      <div class="row"><span class="fl">Cel miesięczny</span>
-        <div class="fr"><input type="number" id="fs-target" min="0" step="1" value="${sav.target||S.savingsTarget||0}">
-          <span class="fu">zł</span></div></div>
-      <div class="row"><span class="fl">Odłożono</span>
-        <div class="fr"><input type="number" id="fs-actual" min="0" step="0.01" value="${sav.actual||0}">
+      <div class="row"><span class="fl">Kwota</span>
+        <div class="fr"><input type="number" id="fse-amt" min="0" step="0.01" placeholder="0,00" value="${e?.amount||''}">
           <span class="fu">zł</span></div></div>
     </div>
+    <p class="sh">Notatka</p>
+    <div class="card">
+      <div class="row"><textarea class="fta" id="fse-note" placeholder="Opcjonalna notatka…" rows="2">${esc(e?.note||'')}</textarea></div>
+    </div>
+    ${isEd?`<p class="sh"></p><div class="card"><div class="del-row row tap" onclick="delSavingsEntryForm()">${ICO_TRASH} Usuń ten wpis</div></div>`:''}
     <div style="height:20px"></div>
   </div>`;
 }
-function submitSavings(){
+function submitSavingsEntry(){
   const k=window._fk;
-  const target=parseFloat(document.getElementById('fs-target').value)||0;
-  const actual=parseFloat(document.getElementById('fs-actual').value)||0;
+  const amt=parseFloat(document.getElementById('fse-amt').value)||0;
+  const date=k.date||today;
+  const note=document.getElementById('fse-note').value.trim();
+  if(!amt){showToast('Podaj kwotę');return;}
   const m=ensureMonth(k.monthKey);
-  m.savings={target,actual};
-  save();showToast('Oszczędności zapisane ✓');
-  pop();setTimeout(()=>renderMonth(k.monthKey,'savings'),50);
+  m.savings=m.savings||{entries:[]};
+  if(k.editId){
+    const i=m.savings.entries.findIndex(x=>x.id===k.editId);
+    if(i>=0)m.savings.entries[i]={...m.savings.entries[i],amount:amt,date,note};
+    showToast('Wpis zaktualizowany ✓');
+  } else {
+    m.savings.entries.push({id:gid(),amount:amt,date,note});
+    showToast('Dodano do oszczędności ✓');
+  }
+  save();pop();setTimeout(()=>renderMonth(k.monthKey,'savings'),50);
+}
+function delSavingsEntryForm(){
+  const k=window._fk;
+  if(!confirm('Usunąć ten wpis?'))return;
+  const m=D.months[k.monthKey];
+  if(m&&m.savings)m.savings.entries=m.savings.entries.filter(x=>x.id!==k.editId);
+  save();showToast('Usunięto');pop();setTimeout(()=>renderMonth(k.monthKey,'savings'),50);
+}
+function delSavingsEntry(key,id){
+  const m=D.months[key];if(!m||!m.savings)return;
+  m.savings.entries=m.savings.entries.filter(x=>x.id!==id);
+  save();showToast('Usunięto');renderMonth(key,'savings');
 }
 
 /* ══ CATEGORIES MANAGER ══ */
@@ -1336,8 +1613,8 @@ function showAddMenu(key){
       <button class="big-btn" style="background:var(--red);display:flex;align-items:center;gap:12px;justify-content:flex-start;padding:14px 16px" onclick="showCatPickerForAdd('${key}')">
         <span style="width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center">${ICO_EXPENSE}</span><div style="text-align:left"><div>Dodaj wydatek</div><div style="font-size:13px;opacity:.8;font-weight:400">Rachunki, jedzenie, zakupy…</div></div>
       </button>
-      <button class="big-btn" style="background:var(--purple);display:flex;align-items:center;gap:12px;justify-content:flex-start;padding:14px 16px" onclick="push('f-savings',{monthKey:'${key}'});closeMod()">
-        <span style="width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center">${ICO_BANK}</span><div style="text-align:left"><div>Edytuj oszczędności</div><div style="font-size:13px;opacity:.8;font-weight:400">Cel i odłożona kwota…</div></div>
+      <button class="big-btn" style="background:var(--purple);display:flex;align-items:center;gap:12px;justify-content:flex-start;padding:14px 16px" onclick="closeMod();showAddToSavings('${key}')">
+        <span style="width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center">${ICO_BANK}</span><div style="text-align:left"><div>Dodaj oszczędność</div><div style="font-size:13px;opacity:.8;font-weight:400">Nowy wpis do skarbonki…</div></div>
       </button>
     </div>
     <button class="sh-cancel" onclick="closeMod()">Anuluj</button>`;
@@ -1358,21 +1635,22 @@ function showAddToSavings(key){
         <div class="fr"><input type="number" id="ats-amt" min="0" step="0.01" placeholder="0,00" autofocus>
           <span class="fu">zł</span></div></div>
     </div>
-    <button class="big-btn" style="width:100%;background:var(--purple);margin-bottom:10px" onclick="submitAddToSavings('${key}')">Dodaj</button>
+    <button class="big-btn big-btn-purple" style="width:100%;margin-bottom:10px" onclick="submitAddToSavings('${key}')">Dodaj</button>
     <button class="sh-cancel" onclick="closeMod()">Anuluj</button>`;
   document.getElementById('modal').classList.add('open');
   setTimeout(()=>document.getElementById('ats-amt')?.focus(),200);
 }
 function submitAddToSavings(key){
   const amt=parseFloat(document.getElementById('ats-amt').value)||0;
+  const date=today;
   if(!amt){showToast('Podaj kwotę');return;}
   const m=ensureMonth(key);
-  m.savings=m.savings||{target:S.savingsTarget||0,actual:0};
-  m.savings.actual=(m.savings.actual||0)+amt;
+  m.savings=m.savings||{entries:[]};
+  m.savings.entries.push({id:gid(),amount:amt,date,note:''});
   save();
   document.getElementById('modal').classList.remove('open');
   showToast('Dodano do skarbonki ✓');
-  renderMonth(key,'savings');
+  renderMonth(key,'overview');
 }
 
 /* ══ TOAST ══ */
