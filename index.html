@@ -285,6 +285,21 @@ select{cursor:pointer}
   cursor:pointer;border-radius:10px;margin-bottom:6px}
 .cat-pick-item:active{opacity:.6}
 .cat-pick-item.sel{background:rgba(0,122,255,.08)}
+/* ── MONTH PICKER ── */
+.mp-year{display:flex;align-items:center;justify-content:center;gap:18px;margin-bottom:14px}
+.mp-year-btn{width:34px;height:34px;border-radius:17px;display:flex;align-items:center;
+  justify-content:center;color:var(--blue);background:var(--card);box-shadow:var(--sh)}
+.mp-year-btn:active{opacity:.5}
+.mp-year-lbl{font-size:18px;font-weight:700;color:var(--text);min-width:64px;text-align:center}
+.month-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 0 8px}
+.month-pick-item{background:var(--card);border-radius:12px;padding:14px 6px;
+  text-align:center;font-size:14px;font-weight:600;color:var(--text);
+  cursor:pointer;position:relative;box-shadow:var(--sh);transition:opacity .12s}
+.month-pick-item:active{opacity:.6}
+.month-pick-item.cur{background:var(--blue);color:#fff}
+.month-pick-item.has::after{content:'';position:absolute;top:6px;right:6px;
+  width:6px;height:6px;border-radius:50%;background:var(--green)}
+.month-pick-item.cur.has::after{background:#fff}
 /* ── TOAST ── */
 #toast{position:fixed;bottom:calc(var(--sab)+80px);left:50%;
   transform:translateX(-50%) translateY(16px);background:rgba(40,40,40,.92);
@@ -317,22 +332,76 @@ select{cursor:pointer}
 
 <script>
 /* ══ PWA ══ */
-(()=>{
-  const ico=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#34C759"/><text x="256" y="340" text-anchor="middle" font-size="280" font-family="-apple-system,sans-serif">💰</text></svg>`;
-  const ic='data:image/svg+xml;base64,'+btoa(unescape(encodeURIComponent(ico)));
+function roundRectPath(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+function setupPWA(){
+  /* Build a real vector app icon on a canvas and export as PNG.
+     (The previous version drew an emoji glyph inside inline SVG, which
+     iOS/Android often fail to rasterize when generating the home-screen
+     icon, resulting in a blank/broken square.) */
+  const size=512;
+  const canvas=document.createElement('canvas');
+  canvas.width=canvas.height=size;
+  const ctx=canvas.getContext('2d');
+
+  // Rounded-square background, matching the app's green hero gradient
+  const rad=size*0.2188;
+  const grad=ctx.createLinearGradient(0,0,size,size);
+  grad.addColorStop(0,'#0d5c28');
+  grad.addColorStop(1,'#34C759');
+  roundRectPath(ctx,0,0,size,size,rad);
+  ctx.fillStyle=grad;
+  ctx.fill();
+
+  // subtle top highlight for depth
+  const hi=ctx.createLinearGradient(0,0,0,size*0.5);
+  hi.addColorStop(0,'rgba(255,255,255,.14)');
+  hi.addColorStop(1,'rgba(255,255,255,0)');
+  roundRectPath(ctx,0,0,size,size,rad);
+  ctx.fillStyle=hi;
+  ctx.fill();
+
+  // wallet glyph, centered
+  const scale=size/24*0.5;
+  ctx.save();
+  ctx.translate(size/2,size/2);
+  ctx.scale(scale,scale);
+  ctx.translate(-12,-11.5);
+  ctx.fillStyle='#ffffff';
+  ctx.fill(new Path2D('M3.5 7a2 2 0 012-2h11a2 2 0 012 2v10a2 2 0 01-2 2h-11a2 2 0 01-2-2V7z'));
+  ctx.fillStyle='#FFD60A';
+  ctx.fill(new Path2D('M16 12h3.5a1 1 0 011 1v2a1 1 0 01-1 1H16a2 2 0 010-4z'));
+  ctx.restore();
+
+  const dataUrl=canvas.toDataURL('image/png');
+
   const m={name:'Budżet Domowy',short_name:'Budżet',start_url:location.href,
     display:'standalone',orientation:'portrait',
     background_color:'#F2F2F7',theme_color:'#34C759',
-    icons:[{src:ic,sizes:'512x512',type:'image/svg+xml',purpose:'any maskable'}]};
+    icons:[
+      {src:dataUrl,sizes:'512x512',type:'image/png',purpose:'any'},
+      {src:dataUrl,sizes:'512x512',type:'image/png',purpose:'maskable'}
+    ]};
   const bl=new Blob([JSON.stringify(m)],{type:'application/json'});
   document.getElementById('pwa-manifest').href=URL.createObjectURL(bl);
-  const li=document.createElement('link');li.rel='apple-touch-icon';li.href=ic;
-  document.head.appendChild(li);
+
+  let li=document.querySelector('link[rel="apple-touch-icon"]');
+  if(!li){li=document.createElement('link');li.rel='apple-touch-icon';document.head.appendChild(li);}
+  li.href=dataUrl;
+
   if('serviceWorker' in navigator){
     const sw=`const C='bg-v1';self.addEventListener('install',e=>e.waitUntil(caches.open(C).then(c=>c.add(new Request(self.location.href,{cache:'no-cache'})))));self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k))))));self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));});`;
     navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:'application/javascript'}))).catch(()=>{});
   }
-})();
+}
+setupPWA();
 
 /* ══ CONSTANTS ══ */
 const EK='budg_v1', SK='budg_set_v1';
@@ -567,25 +636,27 @@ function renderMonths(){
 function newMonth(){
   showMonthPicker();
 }
-function showMonthPicker(){
+function showMonthPicker(year){
   const now=new Date();
-  const keys=[];
-  for(let i=0;i<12;i++){
-    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
-    keys.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
+  year=year||now.getFullYear();
+  const curKey=curMonthKey();
+  let grid='';
+  for(let m=0;m<12;m++){
+    const key=`${year}-${String(m+1).padStart(2,'0')}`;
+    const md=D.months[key];
+    const has=!!(md&&(md.income.length||md.expenses.length||md.savings.actual));
+    const isCur=key===curKey;
+    grid+=`<div class="month-pick-item${isCur?' cur':''}${has?' has':''}" onclick="openMonth('${key}');closeMod()">${MONTHS[m]}</div>`;
   }
-  keys.sort((a,b)=>b.localeCompare(a));
-  let opts='';
-  keys.forEach(key=>{
-    opts+=`<div class="cat-pick-item" onclick="openMonth('${key}');closeMod()">
-      <span style="width:22px;height:22px;display:inline-flex;color:var(--blue)">${ICO_CALENDAR}</span>
-      <span style="font-size:16px;font-weight:500;color:var(--text)">${monthLabel(key)}</span>
-    </div>`;
-  });
   document.getElementById('msh').innerHTML=`
     <div class="sh-handle"></div>
     <div class="sh-title">Wybierz miesiąc</div>
-    <div style="max-height:55vh;overflow-y:auto">${opts}</div>
+    <div class="mp-year">
+      <span class="mp-year-btn" onclick="showMonthPicker(${year-1})">${ICO_BACK.replace('style="margin-right:2px"','')}</span>
+      <span class="mp-year-lbl">${year}</span>
+      <span class="mp-year-btn" style="transform:scaleX(-1)" onclick="showMonthPicker(${year+1})">${ICO_BACK.replace('style="margin-right:2px"','')}</span>
+    </div>
+    <div class="month-grid">${grid}</div>
     <button class="sh-cancel mt" onclick="closeMod()">Anuluj</button>`;
   document.getElementById('modal').classList.add('open');
 }
