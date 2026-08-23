@@ -41,6 +41,16 @@ button{cursor:pointer;border:none;background:none}
   flex:1;text-align:center;padding:0 8px}
 .nb-large{font-size:34px;font-weight:700;color:var(--text);padding:4px 16px 12px;
   display:flex;justify-content:center;align-items:center}
+/* ── LOGO "SELF-WRITING" INTRO ── */
+@keyframes logoDraw{to{stroke-dashoffset:0}}
+@keyframes logoFillIn{to{fill-opacity:1}}
+#logoWriteText{
+  animation:logoDraw 1.15s cubic-bezier(.65,0,.35,1) forwards,
+             logoFillIn .5s ease forwards .8s;
+}
+@media(prefers-reduced-motion:reduce){
+  #logoWriteText{animation:none;fill-opacity:1;stroke-dashoffset:0}
+}
 .nb-btn{color:var(--blue);font-size:17px;padding:6px 10px;display:flex;
   align-items:center;gap:3px;min-width:56px;transition:opacity .15s;white-space:nowrap}
 .nb-btn.r{justify-content:flex-end}.nb-btn.l{justify-content:flex-start}
@@ -124,14 +134,12 @@ button{cursor:pointer;border:none;background:none}
   .donut-slice{transition:none}
   .leg-in{animation:none;opacity:1}
 }
-/* ── CATEGORY SECTION ── */
-.cat-section{margin-bottom:8px}
+/* ── CATEGORY SECTION (unified card, consistent with .card elsewhere) ── */
+.cat-section{margin:0 16px 8px;background:var(--card);border-radius:12px;
+  overflow:hidden;box-shadow:var(--sh)}
 .cat-header{
   display:flex;align-items:center;gap:10px;
   padding:12px 16px;cursor:pointer;
-  background:var(--card);
-  border-radius:12px;margin:0 16px;
-  box-shadow:var(--sh);transition:opacity .12s;
 }
 .cat-header:active{opacity:.7}
 .cat-icon{width:36px;height:36px;border-radius:10px;
@@ -143,14 +151,22 @@ button{cursor:pointer;border:none;background:none}
 .cat-actual{font-size:16px;font-weight:700}
 .cat-planned{font-size:11px;color:var(--text3);margin-top:1px}
 .cat-diff-pos{color:var(--green)}.cat-diff-neg{color:var(--red)}
-.cat-expand{transition:transform .2s}
+.cat-expand{transition:transform .3s cubic-bezier(.22,1,.36,1);flex-shrink:0}
 .cat-expand.open{transform:rotate(90deg)}
+/* Smooth slide open/close via animatable grid-template-rows (no JS height measuring needed) */
 .cat-items{
-  background:var(--card);margin:4px 16px 0;border-radius:0 0 12px 12px;
-  overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.06);
-  display:none;
+  display:grid;grid-template-rows:0fr;
+  transition:grid-template-rows .38s cubic-bezier(.22,1,.36,1);
 }
-.cat-items.open{display:block}
+.cat-items.open{grid-template-rows:1fr}
+.cat-items-inner{overflow:hidden;min-height:0;
+  border-top:1px solid var(--sep);
+  opacity:0;transition:opacity .28s ease .05s;
+}
+.cat-items.open .cat-items-inner{opacity:1}
+@media(prefers-reduced-motion:reduce){
+  .cat-items,.cat-items-inner,.cat-expand{transition:none}
+}
 .exp-row{
   display:flex;align-items:center;
   border-bottom:1px solid var(--sep);position:relative;overflow:hidden;
@@ -271,6 +287,7 @@ select{cursor:pointer}
 .big-btn:active{transform:scale(.97);opacity:.9}
 .big-btn-green{background:var(--green);box-shadow:0 6px 20px rgba(52,199,89,.4)}
 .big-btn-purple{background:var(--purple);box-shadow:0 6px 20px rgba(175,82,222,.4)}
+.big-btn-red{background:var(--red);box-shadow:0 6px 20px rgba(255,59,48,.4)}
 /* ── ONBOARDING ── */
 .onb{display:flex;flex-direction:column;align-items:center;
   justify-content:center;min-height:100dvh;padding:40px 24px;background:var(--bg)}
@@ -388,12 +405,11 @@ select{cursor:pointer}
 
 /* Rounder, glassier cards with a soft top highlight (iOS-glass feel) */
 .card{border-radius:18px;box-shadow:var(--sh),inset 0 1px 0 rgba(255,255,255,.55)}
-.cat-header{border-radius:18px;box-shadow:var(--sh),inset 0 1px 0 rgba(255,255,255,.55)}
-.cat-items{border-radius:0 0 18px 18px}
+.cat-section{border-radius:18px;box-shadow:var(--sh),inset 0 1px 0 rgba(255,255,255,.55)}
 .sav-card{border-radius:20px;box-shadow:var(--sh),inset 0 1px 0 rgba(255,255,255,.55)}
 .hero{border-radius:24px;position:relative;overflow:hidden}
 @media(prefers-color-scheme:dark){
-  .card,.cat-header,.sav-card{box-shadow:var(--sh),inset 0 1px 0 rgba(255,255,255,.06)}
+  .card,.cat-section,.sav-card{box-shadow:var(--sh),inset 0 1px 0 rgba(255,255,255,.06)}
 }
 
 /* Diagonal glass sheen across hero balance card */
@@ -615,6 +631,7 @@ function allMonthKeys(){
 /* ══ NAV ══ */
 let stack=[];
 let curTab='overview';
+let _logoPlayed=false;
 
 function push(sc,p={}){
   stack.push({sc,p});
@@ -781,7 +798,8 @@ function initSwipes(){
 
 /* ══ SCREEN: MONTHS ══ */
 function renderMonths(){
-  nb({large:LOGO_SVG,right:{html:ICO_GEAR,fn:"push('settings',{})"}});
+  nb({large:_logoPlayed?LOGO_SVG_STATIC:LOGO_SVG_ANIMATED,right:{html:ICO_GEAR,fn:"push('settings',{})"}});
+  _logoPlayed=true;
   const keys=allMonthKeys();
   const totalSavAll=allSavingsTotal();
   const target=S.savingsTarget||0;
@@ -862,7 +880,7 @@ function showEditSavingsGoal(){
         <div class="fr"><input type="number" id="sg-target" min="0" step="1" value="${S.savingsTarget||0}">
           <span class="fu">zł</span></div></div>
     </div>
-    <button class="big-btn" style="width:100%;background:var(--purple);margin-bottom:10px" onclick="submitSavingsGoal()">Zapisz</button>
+    <button class="big-btn big-btn-purple" style="width:100%;margin-bottom:10px" onclick="submitSavingsGoal()">Zapisz</button>
     <button class="sh-cancel" onclick="closeMod()">Anuluj</button>`;
   document.getElementById('modal').classList.add('open');
   setTimeout(()=>document.getElementById('sg-target')?.focus(),200);
@@ -1118,13 +1136,13 @@ function buildExpenses(key){
           </div>
           <span class="cat-expand" id="arr-${cat.id}">${ICO_CHEV}</span>
         </div>
-        <div class="cat-items" id="cat-${cat.id}">${itemsHtml}</div>
+        <div class="cat-items" id="cat-${cat.id}"><div class="cat-items-inner">${itemsHtml}</div></div>
       </div>`;
     });
   }
 
   html+=`<div style="padding:12px 16px 0">
-    <button class="big-btn" style="width:100%;background:var(--red)" onclick="showCatPickerForAdd('${key}')">
+    <button class="big-btn big-btn-red" style="width:100%" onclick="showCatPickerForAdd('${key}')">
       + Dodaj wydatek
     </button>
   </div>`;
@@ -1179,7 +1197,7 @@ function buildIncome(key){
     </div>`;
   }
   html+=`<div style="padding:12px 16px 0">
-    <button class="big-btn" style="width:100%;background:var(--green)" onclick="push('f-income',{monthKey:'${key}'})">+ Dodaj przychód</button>
+    <button class="big-btn big-btn-green" style="width:100%" onclick="push('f-income',{monthKey:'${key}'})">+ Dodaj przychód</button>
   </div>`;
   return html;
 }
@@ -1607,13 +1625,13 @@ function showAddMenu(key){
     <div class="sh-handle"></div>
     <div class="sh-title">Dodaj do ${monthLabel(key)}</div>
     <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px">
-      <button class="big-btn" style="background:var(--green);display:flex;align-items:center;gap:12px;justify-content:flex-start;padding:14px 16px" onclick="push('f-income',{monthKey:'${key}'});closeMod()">
+      <button class="big-btn big-btn-green" style="display:flex;align-items:center;gap:12px;justify-content:flex-start;padding:14px 16px" onclick="push('f-income',{monthKey:'${key}'});closeMod()">
         <span style="width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center">${ICO_CASH}</span><div style="text-align:left"><div>Dodaj przychód</div><div style="font-size:13px;opacity:.8;font-weight:400">Wynagrodzenie, freelance…</div></div>
       </button>
-      <button class="big-btn" style="background:var(--red);display:flex;align-items:center;gap:12px;justify-content:flex-start;padding:14px 16px" onclick="showCatPickerForAdd('${key}')">
+      <button class="big-btn big-btn-red" style="display:flex;align-items:center;gap:12px;justify-content:flex-start;padding:14px 16px" onclick="showCatPickerForAdd('${key}')">
         <span style="width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center">${ICO_EXPENSE}</span><div style="text-align:left"><div>Dodaj wydatek</div><div style="font-size:13px;opacity:.8;font-weight:400">Rachunki, jedzenie, zakupy…</div></div>
       </button>
-      <button class="big-btn" style="background:var(--purple);display:flex;align-items:center;gap:12px;justify-content:flex-start;padding:14px 16px" onclick="closeMod();showAddToSavings('${key}')">
+      <button class="big-btn big-btn-purple" style="display:flex;align-items:center;gap:12px;justify-content:flex-start;padding:14px 16px" onclick="closeMod();showAddToSavings('${key}')">
         <span style="width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center">${ICO_BANK}</span><div style="text-align:left"><div>Dodaj oszczędność</div><div style="font-size:13px;opacity:.8;font-weight:400">Nowy wpis do skarbonki…</div></div>
       </button>
     </div>
@@ -1753,27 +1771,29 @@ const ICO_TAG=icon('tag',20);
 const ICO_CHART=icon('chart',20);
 const ICO_WALLET=icon('wallet',40);
 
-/* ══ BRAND LOGO ══ */
-const LOGO_SVG=`<svg width="150" height="46" viewBox="0 0 150 46" xmlns="http://www.w3.org/2000/svg" style="display:block">
+/* ══ BRAND LOGO — simple white wordmark ══ */
+const LOGO_FONT=`font-family="-apple-system,BlinkMacSystemFont,'SF Pro Rounded','Segoe UI',Roboto,sans-serif" font-size="32" font-weight="800" letter-spacing="-1"`;
+
+/* Static: shown after the intro has already played once */
+const LOGO_SVG_STATIC=`<svg width="150" height="46" viewBox="0 0 150 46" xmlns="http://www.w3.org/2000/svg" style="display:block">
   <defs>
-    <linearGradient id="lgText" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#3DDC84"/>
-      <stop offset="55%" stop-color="#22B8CF"/>
-      <stop offset="100%" stop-color="#8E5CF7"/>
-    </linearGradient>
-    <filter id="lgGlow" x="-40%" y="-40%" width="180%" height="180%">
-      <feGaussianBlur stdDeviation="4" result="blur"/>
-      <feColorMatrix in="blur" type="matrix"
-        values="0 0 0 0 0.29  0 0 0 0 0.78  0 0 0 0 0.6  0 0 0 0.55 0" result="glow"/>
-      <feMerge>
-        <feMergeNode in="glow"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
+    <filter id="lgShadowS" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#000" flood-opacity="0.18"/>
     </filter>
   </defs>
-  <text x="75" y="32" text-anchor="middle" filter="url(#lgGlow)"
-    font-family="-apple-system,BlinkMacSystemFont,'SF Pro Rounded','Segoe UI',Roboto,sans-serif"
-    font-size="32" font-weight="800" letter-spacing="-1" fill="url(#lgText)">Budgy</text>
+  <text x="75" y="32" text-anchor="middle" filter="url(#lgShadowS)" ${LOGO_FONT} fill="#fff">Budgy</text>
+</svg>`;
+
+/* Animated: the wordmark "writes itself" on launch — outline draws in, then fills solid white */
+const LOGO_SVG_ANIMATED=`<svg width="150" height="46" viewBox="0 0 150 46" xmlns="http://www.w3.org/2000/svg" style="display:block">
+  <defs>
+    <filter id="lgShadowA" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#000" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+  <text id="logoWriteText" x="75" y="32" text-anchor="middle" filter="url(#lgShadowA)" ${LOGO_FONT}
+    fill="#fff" fill-opacity="0" stroke="#fff" stroke-width="1"
+    stroke-dasharray="480" stroke-dashoffset="480">Budgy</text>
 </svg>`;
 
 /* ══ INIT ══ */
