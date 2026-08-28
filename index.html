@@ -466,6 +466,35 @@ select{cursor:pointer}
   .prog-bar::after{animation:none}
   .hero::before{display:none}
 }
+
+/* ── AUTH / LOGIN ── */
+@keyframes unlockOut{to{opacity:0;transform:scale(.94)}}
+@keyframes unlockIn{from{opacity:0;transform:scale(1.04) translateY(10px)}to{opacity:1;transform:none}}
+.unlockOut{animation:unlockOut .26s cubic-bezier(.4,0,1,1) both}
+.unlockIn{animation:unlockIn .55s cubic-bezier(.22,1,.36,1) both}
+.no-card-anim .sp>*{animation:none}
+@keyframes shakeX{10%,90%{transform:translateX(-2px)}20%,80%{transform:translateX(4px)}30%,50%,70%{transform:translateX(-8px)}40%,60%{transform:translateX(8px)}}
+.shake{animation:shakeX .5s cubic-bezier(.36,.07,.19,.97) both}
+.pin-dots{display:flex;justify-content:center;gap:14px;margin-bottom:28px}
+.pin-dot{width:14px;height:14px;border-radius:50%;background:var(--sep);transition:all .18s cubic-bezier(.34,1.56,.64,1)}
+.pin-dot.filled{background:var(--blue);transform:scale(1.15)}
+.pin-keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;width:100%;max-width:270px;margin:0 auto}
+.pin-key{aspect-ratio:1;border-radius:50%;background:var(--card);border:none;font-size:26px;font-weight:600;
+  color:var(--text);display:flex;align-items:center;justify-content:center;box-shadow:var(--sh);
+  transition:transform .16s cubic-bezier(.34,1.56,.64,1),background .12s}
+.pin-key:active{transform:scale(.88);background:var(--sep)}
+.pin-key-del{background:none;box-shadow:none;font-size:19px;color:var(--text3)}
+.pin-key-del:active{background:none;opacity:.5}
+
+/* ── QUICK INSIGHT TILES ── */
+.qtiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 16px 14px}
+.qtile{background:var(--card);border-radius:16px;padding:14px;box-shadow:var(--sh),inset 0 1px 0 rgba(255,255,255,.55);
+  cursor:pointer;transition:transform .18s cubic-bezier(.34,1.56,.64,1),opacity .15s}
+.qtile:active{transform:scale(.96);opacity:.85}
+.qtile-ic{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:10px}
+.qtile-lbl{font-size:14px;font-weight:600;color:var(--text)}
+.qtile-sub{font-size:12px;color:var(--text3);margin-top:1px}
+@media(prefers-color-scheme:dark){.qtile{box-shadow:var(--sh),inset 0 1px 0 rgba(255,255,255,.06)}}
 </style>
 </head>
 <body>
@@ -639,7 +668,12 @@ function allMonthKeys(){
 /* ══ NAV ══ */
 let stack=[];
 let curTab='overview';
+let _bootTransition=false;
 let _logoPlayed=false;
+
+/* ══ AUTH / PIN ══ */
+const LOGIN_SESSION_KEY='bg_logged_session_v1';
+let _pinState={mode:'login',buffer:'',firstPin:''};
 
 function push(sc,p={}){
   stack.push({sc,p});
@@ -656,8 +690,10 @@ window.addEventListener('popstate',()=>{
 });
 function render(sc,p,dir='push'){
   const el=document.getElementById('sc');
-  el.classList.remove('sIn','sBk');void el.offsetWidth;
-  el.classList.add(dir==='push'?'sIn':'sBk');
+  if(!_bootTransition){
+    el.classList.remove('sIn','sBk');void el.offsetWidth;
+    el.classList.add(dir==='push'?'sIn':'sBk');
+  }
   curTab=p.tab||'overview';
   switch(sc){
     case 'months':   renderMonths();break;
@@ -668,6 +704,10 @@ function render(sc,p,dir='push'){
     case 'categories':renderCategories();break;
     case 'f-cat':    renderFCat(p);break;
     case 'settings': renderSettings();break;
+    case 'change-pin':renderChangePin();break;
+    case 'year-summary':renderYearSummary();break;
+    case 'day-summary':renderDaySummary();break;
+    case 'worklog-insight':renderWorklogInsight();break;
   }
 }
 
@@ -684,11 +724,173 @@ function nb({back,left,title,large,right}={}){
   }
   el.innerHTML=`<div class="nb-row">${lh}<span class="nb-title">${title||''}</span>${rh}</div>`
     +(large?`<div class="nb-large">${large}</div>`:'');
+  el.style.borderBottom=large?'none':'';
+}
+
+/* ══ AUTH / LOGIN SYSTEM ══ */
+async function hashPin(pin){
+  if(!window.crypto?.subtle)return btoa('budgy:'+pin);
+  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('budgy:'+pin));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function budgyBadge(size=84){
+  return `<div class="onb-icon" style="width:${size}px;height:${size}px;border-radius:${Math.round(size*.26)}px;
+    background:linear-gradient(135deg,var(--green),#1f9e46);display:flex;align-items:center;justify-content:center;
+    margin:0 auto ${Math.round(size*.24)}px;box-shadow:0 10px 24px rgba(52,199,89,.35);color:#fff">${icon('wallet',Math.round(size*.47))}</div>`;
+}
+function renderPinPad(){
+  return `<div class="pin-dots" id="pinDots">${[0,1,2,3].map(i=>`<div class="pin-dot" id="pd${i}"></div>`).join('')}</div>
+    <div class="pin-keypad">
+      ${[1,2,3,4,5,6,7,8,9].map(n=>`<button class="pin-key" onclick="pinKeyPress('${n}')">${n}</button>`).join('')}
+      <span></span>
+      <button class="pin-key" onclick="pinKeyPress('0')">0</button>
+      <button class="pin-key pin-key-del" onclick="pinKeyPress('del')">⌫</button>
+    </div>`;
+}
+function refreshPinDots(){
+  for(let i=0;i<4;i++){
+    const d=document.getElementById('pd'+i);
+    if(d)d.classList.toggle('filled',i<_pinState.buffer.length);
+  }
+}
+function shakePinPad(){
+  const dots=document.getElementById('pinDots');
+  if(!dots)return;
+  dots.classList.remove('shake');void dots.offsetWidth;dots.classList.add('shake');
+}
+function pinKeyPress(k){
+  if(k==='del'){_pinState.buffer=_pinState.buffer.slice(0,-1);refreshPinDots();return;}
+  if(_pinState.buffer.length>=4)return;
+  _pinState.buffer+=k;
+  refreshPinDots();
+  if(_pinState.buffer.length===4)setTimeout(()=>handlePinComplete(),140);
+}
+async function handlePinComplete(){
+  const pin=_pinState.buffer;
+  const setPinTexts=(title,sub)=>{
+    const t=document.getElementById('pinTitle'),s=document.getElementById('pinSub');
+    if(t)t.textContent=title;if(s)s.textContent=sub;
+  };
+  if(_pinState.mode==='setup1'){
+    _pinState={mode:'setup2',buffer:'',firstPin:pin};
+    setPinTexts('Powtórz PIN','Wpisz PIN jeszcze raz, aby potwierdzić.');
+    refreshPinDots();
+  } else if(_pinState.mode==='setup2'){
+    if(pin!==_pinState.firstPin){
+      showToast('PIN-y się różnią, spróbuj ponownie');shakePinPad();
+      _pinState={mode:'setup1',buffer:'',firstPin:''};
+      setPinTexts('Ustaw PIN','Ustaw 4-cyfrowy kod, który zabezpieczy Twoje dane w Budgy.');
+      setTimeout(refreshPinDots,380);return;
+    }
+    S.pinHash=await hashPin(pin);saveS();
+    sessionStorage.setItem(LOGIN_SESSION_KEY,'1');
+    playUnlockTransition(()=>{ if(!S._setup)showOnboarding(); else bootApp(); });
+  } else if(_pinState.mode==='login'){
+    const h=await hashPin(pin);
+    if(h!==S.pinHash){
+      showToast('Nieprawidłowy PIN');shakePinPad();
+      _pinState.buffer='';setTimeout(refreshPinDots,380);return;
+    }
+    sessionStorage.setItem(LOGIN_SESSION_KEY,'1');
+    playUnlockTransition(()=>bootApp());
+  } else if(_pinState.mode==='change-old'){
+    const h=await hashPin(pin);
+    if(h!==S.pinHash){
+      showToast('Nieprawidłowy PIN');shakePinPad();
+      _pinState.buffer='';setTimeout(refreshPinDots,380);return;
+    }
+    _pinState={mode:'change-new1',buffer:'',firstPin:''};
+    setPinTexts('Nowy PIN','Wpisz nowy 4-cyfrowy PIN.');
+    refreshPinDots();
+  } else if(_pinState.mode==='change-new1'){
+    _pinState={mode:'change-new2',buffer:'',firstPin:pin};
+    setPinTexts('Powtórz nowy PIN','Wpisz nowy PIN jeszcze raz.');
+    refreshPinDots();
+  } else if(_pinState.mode==='change-new2'){
+    if(pin!==_pinState.firstPin){
+      showToast('PIN-y się różnią, spróbuj ponownie');shakePinPad();
+      _pinState={mode:'change-new1',buffer:'',firstPin:''};
+      setPinTexts('Nowy PIN','Wpisz nowy 4-cyfrowy PIN.');
+      setTimeout(refreshPinDots,380);return;
+    }
+    S.pinHash=await hashPin(pin);saveS();
+    showToast('PIN zmieniony ✓');
+    pop();
+  }
+}
+function showPinSetup(){
+  document.getElementById('nb').style.display='none';
+  _pinState={mode:'setup1',buffer:'',firstPin:''};
+  document.getElementById('sc').innerHTML=`
+  <div class="onb">
+    ${budgyBadge()}
+    <div class="onb-title" id="pinTitle">Ustaw PIN</div>
+    <p class="onb-sub" id="pinSub">Ustaw 4-cyfrowy kod, który zabezpieczy Twoje dane w Budgy.</p>
+    ${renderPinPad()}
+  </div>`;
+  refreshPinDots();
+}
+function showLogin(){
+  document.getElementById('nb').style.display='none';
+  _pinState={mode:'login',buffer:'',firstPin:''};
+  document.getElementById('sc').innerHTML=`
+  <div class="onb">
+    ${budgyBadge()}
+    <div class="onb-title" id="pinTitle">Witaj ponownie</div>
+    <p class="onb-sub" id="pinSub">Wpisz PIN, aby odblokować Budgy.</p>
+    ${renderPinPad()}
+  </div>`;
+  refreshPinDots();
+}
+function renderChangePin(){
+  nb({left:{label:'Anuluj',fn:'pop()'},title:'Zmień PIN'});
+  _pinState={mode:'change-old',buffer:'',firstPin:''};
+  document.getElementById('sc').innerHTML=`
+  <div class="sp">
+    <div class="onb" style="min-height:auto;padding:20px 24px 8px">
+      ${budgyBadge(64)}
+      <div class="onb-title" id="pinTitle" style="font-size:21px">Wpisz obecny PIN</div>
+      <p class="onb-sub" id="pinSub" style="margin-bottom:22px">Potwierdź obecny PIN, aby ustawić nowy.</p>
+      ${renderPinPad()}
+    </div>
+  </div>`;
+  refreshPinDots();
+}
+function bootApp(){
+  document.getElementById('nb').style.display='';
+  stack=[{sc:'months',p:{}}];
+  history.replaceState({i:0},'','');
+  _bootTransition=true;
+  _logoPlayed=true;
+  render('months',{},'push');
+  _bootTransition=false;
+}
+function playUnlockTransition(cb){
+  const sc=document.getElementById('sc');
+  sc.classList.add('unlockOut');
+  setTimeout(()=>{
+    sc.classList.remove('unlockOut');
+    sc.classList.add('no-card-anim');
+    cb();
+    requestAnimationFrame(()=>{
+      sc.classList.add('unlockIn');
+      setTimeout(()=>{
+        sc.classList.remove('unlockIn');
+        sc.classList.remove('no-card-anim');
+      },650);
+    });
+  },260);
+}
+function logout(){
+  showConfirm('Na pewno chcesz się wylogować z Budgy?',()=>{
+    sessionStorage.removeItem(LOGIN_SESSION_KEY);
+    showLogin();
+  },{title:'Wyloguj się',confirmLabel:'Wyloguj się',danger:true});
 }
 
 /* ══ COUNT-UP ANIMATION ══ */
 function animateCountUps(root){
-  const reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const reduce=_bootTransition||(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   (root||document).querySelectorAll('[data-cu]').forEach(el=>{
     const end=parseFloat(el.getAttribute('data-cu'));
     if(isNaN(end))return;
@@ -824,10 +1026,36 @@ function renderMonths(){
         </div>
       </div>
     </div>`;
+  const wlTotals=worklogMonthlyTotals();
+  const wlCur=wlTotals[curMonthKey()];
+  const wlSub=wlCur?`${Math.floor(wlCur.minutes/60)}h ${Math.round((wlCur.minutes/60%1)*60)}min w tym mies.`:'Brak wpisów w tym mies.';
+  const qtilesHtml=`<div class="qtiles">
+      <div class="qtile" onclick="push('year-summary',{})">
+        <div class="qtile-ic" style="background:rgba(0,122,255,.12);color:var(--blue)">${icon('chart',18)}</div>
+        <div class="qtile-lbl">Ten rok</div>
+        <div class="qtile-sub">Podsumowanie ${new Date().getFullYear()}</div>
+      </div>
+      <div class="qtile" onclick="push('month',{key:'${curMonthKey()}',tab:'overview'})">
+        <div class="qtile-ic" style="background:rgba(52,199,89,.12);color:var(--green)">${icon('calendar',18)}</div>
+        <div class="qtile-lbl">Ten miesiąc</div>
+        <div class="qtile-sub">${monthLabel(curMonthKey())}</div>
+      </div>
+      <div class="qtile" onclick="push('day-summary',{})">
+        <div class="qtile-ic" style="background:rgba(255,149,0,.12);color:var(--orange)">${icon('target',18)}</div>
+        <div class="qtile-lbl">Dzisiaj</div>
+        <div class="qtile-sub">${fmtDate(today)}</div>
+      </div>
+      <div class="qtile" onclick="push('worklog-insight',{})">
+        <div class="qtile-ic" style="background:rgba(175,82,222,.12);color:var(--purple)">${icon('wallet',18)}</div>
+        <div class="qtile-lbl">Godziny pracy</div>
+        <div class="qtile-sub">${wlSub}</div>
+      </div>
+    </div>`;
   if(!keys.length){
     document.getElementById('sc').innerHTML=`
     <div class="sp">
       ${pinHtml}
+      ${qtilesHtml}
       <div class="empty">
         <div class="empty-icon">${ICO_WALLET}</div>
         <div class="empty-title">Brak danych</div>
@@ -838,7 +1066,7 @@ function renderMonths(){
     animateCountUps();
     return;
   }
-  let html='<div class="sp">'+pinHtml;
+  let html='<div class="sp">'+pinHtml+qtilesHtml;
   keys.forEach(key=>{
     const inc=totalIncome(key),exp=totalExpActual(key);
     const sav=monthSavingsTotal(key);
@@ -1283,8 +1511,6 @@ function renderFIncome({editId=null,monthKey=null}={}){
       <div class="row"><span class="fl">Kwota</span>
         <div class="fr"><input type="number" id="fi-amt" min="0" step="0.01" placeholder="0,00" value="${e?.amount||S.defaultIncome||''}">
           <span class="fu">zł</span></div></div>
-      <div class="row"><span class="fl">Data</span>
-        <div class="fr"><input type="date" id="fi-date" value="${e?.date||today}"></div></div>
     </div>
     <p class="sh">Notatka</p>
     <div class="card">
@@ -1297,27 +1523,27 @@ function submitIncome(){
   const k=window._fk;
   const name=document.getElementById('fi-name').value.trim();
   const amt=parseFloat(document.getElementById('fi-amt').value)||0;
-  const date=document.getElementById('fi-date').value;
   const note=document.getElementById('fi-note').value.trim();
   if(!name){showToast('Podaj nazwę przychodu');return;}
   if(!amt){showToast('Podaj kwotę');return;}
   const m=ensureMonth(k.monthKey);
   if(k.editId){
     const i=m.income.findIndex(x=>x.id===k.editId);
-    if(i>=0)m.income[i]={...m.income[i],name,amount:amt,date,note};
+    if(i>=0)m.income[i]={...m.income[i],name,amount:amt,note};
     showToast('Przychód zaktualizowany ✓');
   } else {
-    m.income.push({id:gid(),name,amount:amt,date,note});
+    m.income.push({id:gid(),name,amount:amt,date:today,note});
     showToast('Przychód dodany ✓');
   }
   save();pop();setTimeout(()=>renderMonth(k.monthKey,'income'),50);
 }
 function delIncomeForm(){
   const k=window._fk;
-  if(!confirm('Usunąć ten przychód?'))return;
-  const m=D.months[k.monthKey];
-  if(m)m.income=m.income.filter(i=>i.id!==k.editId);
-  save();showToast('Usunięto');pop();setTimeout(()=>renderMonth(k.monthKey,'income'),50);
+  showConfirm('Usunąć ten przychód?',()=>{
+    const m=D.months[k.monthKey];
+    if(m)m.income=m.income.filter(i=>i.id!==k.editId);
+    save();showToast('Usunięto');pop();setTimeout(()=>renderMonth(k.monthKey,'income'),50);
+  },{title:'Usuń przychód',confirmLabel:'Usuń',danger:true});
 }
 function delIncome(key,id){
   const m=D.months[key];if(!m)return;
@@ -1418,10 +1644,11 @@ function submitExpense(){
 }
 function delExpenseForm(){
   const k=window._fk;
-  if(!confirm('Usunąć ten wydatek?'))return;
-  const m=D.months[k.monthKey];
-  if(m)m.expenses=m.expenses.filter(e=>e.id!==k.editId);
-  save();showToast('Usunięto');pop();setTimeout(()=>renderMonth(k.monthKey,'expenses'),50);
+  showConfirm('Usunąć ten wydatek?',()=>{
+    const m=D.months[k.monthKey];
+    if(m)m.expenses=m.expenses.filter(e=>e.id!==k.editId);
+    save();showToast('Usunięto');pop();setTimeout(()=>renderMonth(k.monthKey,'expenses'),50);
+  },{title:'Usuń wydatek',confirmLabel:'Usuń',danger:true});
 }
 function delExpense(key,id){
   const m=D.months[key];if(!m)return;
@@ -1474,10 +1701,11 @@ function submitSavingsEntry(){
 }
 function delSavingsEntryForm(){
   const k=window._fk;
-  if(!confirm('Usunąć ten wpis?'))return;
-  const m=D.months[k.monthKey];
-  if(m&&m.savings)m.savings.entries=m.savings.entries.filter(x=>x.id!==k.editId);
-  save();showToast('Usunięto');pop();setTimeout(()=>renderMonth(k.monthKey,'savings'),50);
+  showConfirm('Usunąć ten wpis?',()=>{
+    const m=D.months[k.monthKey];
+    if(m&&m.savings)m.savings.entries=m.savings.entries.filter(x=>x.id!==k.editId);
+    save();showToast('Usunięto');pop();setTimeout(()=>renderMonth(k.monthKey,'savings'),50);
+  },{title:'Usuń wpis',confirmLabel:'Usuń',danger:true});
 }
 function delSavingsEntry(key,id){
   const m=D.months[key];if(!m||!m.savings)return;
@@ -1554,12 +1782,196 @@ function submitCat(){
   save();pop();setTimeout(()=>renderCategories(),50);
 }
 function delCatForm(id){
-  if(!confirm('Usunąć kategorię? Wydatki z tej kategorii zostaną zachowane.'))return;
-  D.categories=D.categories.filter(c=>c.id!==id);
-  save();showToast('Kategoria usunięta');pop();setTimeout(()=>renderCategories(),50);
+  showConfirm('Usunąć kategorię? Wydatki z tej kategorii zostaną zachowane.',()=>{
+    D.categories=D.categories.filter(c=>c.id!==id);
+    save();showToast('Kategoria usunięta');pop();setTimeout(()=>renderCategories(),50);
+  },{title:'Usuń kategorię',confirmLabel:'Usuń',danger:true});
 }
 
 /* ══ SETTINGS ══ */
+/* ══ YEAR / DAY SUMMARIES ══ */
+function renderYearSummary(){
+  const y=new Date().getFullYear();
+  nb({back:{fn:'pop()',label:'Wstecz'},title:`Rok ${y}`});
+  const keys=allMonthKeys().filter(k=>k.startsWith(String(y))).sort((a,b)=>b.localeCompare(a));
+  let inc=0,exp=0,sav=0;
+  keys.forEach(k=>{inc+=totalIncome(k);exp+=totalExpActual(k);sav+=monthSavingsTotal(k);});
+  const bal=inc-exp-sav;
+  let html=`<div class="sp">
+    <div class="${bal>=0?'hero':'hero neg'}">
+      <div class="hero-label">Bilans roku ${y}</div>
+      <div class="hero-amount" data-cu="${bal}" data-cu-fmt="signed">${fmtMoney(bal)}</div>
+      <div class="hero-row">
+        <div class="hero-col"><div class="hero-col-label">Przychody</div><div class="hero-col-val">${fmtMoneyAbs(inc)}</div></div>
+        <div class="hero-col"><div class="hero-col-label">Wydatki</div><div class="hero-col-val">${fmtMoneyAbs(exp)}</div></div>
+        <div class="hero-col"><div class="hero-col-label">Oszczędności</div><div class="hero-col-val">${fmtMoneyAbs(sav)}</div></div>
+      </div>
+    </div>`;
+  if(keys.length){
+    html+=`<p class="sh">Miesiące</p><div class="card">`;
+    keys.forEach(k=>{
+      const mi=totalIncome(k),me=totalExpActual(k),ms=monthSavingsTotal(k),mb=mi-me-ms;
+      const cls=mb>0?'m-pos':mb<0?'m-neg':'m-zero';
+      html+=`<div class="row tap" onclick="push('month',{key:'${k}'})">
+        <div class="rm"><div class="rt">${monthLabel(k)}</div></div>
+        <span class="m-badge ${cls}">${fmtMoney(mb)}</span>
+      </div>`;
+    });
+    html+=`</div>`;
+  } else {
+    html+=`<div class="empty">
+      <div class="empty-icon" style="width:64px;height:64px;display:inline-flex;align-items:center;justify-content:center;color:var(--blue)">${icon('chart',34)}</div>
+      <div class="empty-title">Brak danych za ${y}</div>
+      <p class="empty-sub">Dodaj pierwszy miesiąc, aby zobaczyć podsumowanie roku.</p>
+    </div>`;
+  }
+  html+='</div>';
+  document.getElementById('sc').innerHTML=html;
+  animateCountUps();
+}
+function renderDaySummary(){
+  nb({back:{fn:'pop()',label:'Wstecz'},title:'Dzisiaj'});
+  const d=today;
+  let incT=[],expT=[],savT=[];
+  Object.keys(D.months).forEach(key=>{
+    const m=D.months[key];
+    (m.income||[]).forEach(i=>{if(i.date===d)incT.push({...i,monthKey:key});});
+    (m.expenses||[]).forEach(e=>{if(e.date===d)expT.push({...e,monthKey:key});});
+    (m.savings?.entries||[]).forEach(s=>{if(s.date===d)savT.push({...s,monthKey:key});});
+  });
+  const incSum=incT.reduce((s,x)=>s+x.amount,0);
+  const expSum=expT.reduce((s,x)=>s+x.actual,0);
+  const savSum=savT.reduce((s,x)=>s+x.amount,0);
+  const bal=incSum-expSum-savSum;
+  let html=`<div class="sp">
+    <div class="${bal>=0?'hero':'hero neg'}">
+      <div class="hero-label">Bilans dnia — ${fmtDate(d)}</div>
+      <div class="hero-amount" data-cu="${bal}" data-cu-fmt="signed">${fmtMoney(bal)}</div>
+      <div class="hero-row">
+        <div class="hero-col"><div class="hero-col-label">Przychody</div><div class="hero-col-val">${fmtMoneyAbs(incSum)}</div></div>
+        <div class="hero-col"><div class="hero-col-label">Wydatki</div><div class="hero-col-val">${fmtMoneyAbs(expSum)}</div></div>
+        <div class="hero-col"><div class="hero-col-label">Oszczędności</div><div class="hero-col-val">${fmtMoneyAbs(savSum)}</div></div>
+      </div>
+    </div>`;
+  if(expT.length){
+    html+='<p class="sh">Wydatki dziś</p><div class="card">';
+    expT.forEach(e=>{
+      const c=catById(e.catId);
+      html+=`<div class="row"><div class="rm"><div class="rt">${esc(e.name)}</div><div class="rmeta">${esc(c.name)} · ${monthLabel(e.monthKey)}</div></div><span style="font-size:16px;font-weight:700;color:var(--red)">${fmtMoneyAbs(e.actual)}</span></div>`;
+    });
+    html+='</div>';
+  }
+  if(incT.length){
+    html+='<p class="sh">Przychody dziś</p><div class="card">';
+    incT.forEach(i=>{
+      html+=`<div class="row"><div class="rm"><div class="rt">${esc(i.name)}</div><div class="rmeta">${monthLabel(i.monthKey)}</div></div><span style="font-size:16px;font-weight:700;color:var(--green)">${fmtMoneyAbs(i.amount)}</span></div>`;
+    });
+    html+='</div>';
+  }
+  if(savT.length){
+    html+='<p class="sh">Oszczędności dziś</p><div class="card">';
+    savT.forEach(s=>{
+      html+=`<div class="row"><div class="rm"><div class="rt">${s.note?esc(s.note):'Wpłata'}</div><div class="rmeta">${monthLabel(s.monthKey)}</div></div><span style="font-size:16px;font-weight:700;color:var(--purple)">${fmtMoneyAbs(s.amount)}</span></div>`;
+    });
+    html+='</div>';
+  }
+  if(!incT.length&&!expT.length&&!savT.length){
+    html+=`<div class="empty">
+      <div class="empty-icon" style="width:64px;height:64px;display:inline-flex;align-items:center;justify-content:center;color:var(--blue)">${icon('calendar',34)}</div>
+      <div class="empty-title">Brak wpisów dzisiaj</div>
+      <p class="empty-sub">Nie dodano jeszcze żadnych transakcji z dzisiejszą datą.</p>
+    </div>`;
+  }
+  html+='</div>';
+  document.getElementById('sc').innerHTML=html;
+  animateCountUps();
+}
+
+/* ══ WORKLOG INSIGHT (dane z aplikacji WorkLog) ══ */
+function readWorklogEntries(){
+  try{
+    const profiles=JSON.parse(localStorage.getItem('wl_profiles_v1')||'[]');
+    const activeId=localStorage.getItem('wl_active_profile_v1');
+    let raw=null;
+    if(Array.isArray(profiles)&&profiles.length&&activeId){
+      const profile=profiles.find(p=>p.id===activeId);
+      const key=profile&&profile.legacy?'wl_entries_v1':`wl_entries_v1_${activeId}`;
+      raw=localStorage.getItem(key);
+    } else {
+      raw=localStorage.getItem('wl_entries_v1');
+    }
+    const arr=JSON.parse(raw||'[]');
+    return Array.isArray(arr)?arr:[];
+  }catch(e){return [];}
+}
+function wlMinutes(e){
+  if(!e.wejscie||!e.wyjscie)return 0;
+  const [h1,m1]=e.wejscie.split(':').map(Number);
+  const [h2,m2]=e.wyjscie.split(':').map(Number);
+  if([h1,m1,h2,m2].some(n=>isNaN(n)))return 0;
+  let diff=(h2*60+m2)-(h1*60+m1);
+  if(diff<0)diff+=1440;
+  return diff;
+}
+function wlEarn(e,defRate){return(wlMinutes(e)/60)*(e.stawka||defRate||0);}
+function worklogMonthlyTotals(){
+  const entries=readWorklogEntries();
+  const totals={};
+  entries.forEach(e=>{
+    if(!e.date)return;
+    const key=e.date.slice(0,7);
+    if(!totals[key])totals[key]={minutes:0,earn:0,count:0};
+    totals[key].minutes+=wlMinutes(e);
+    totals[key].earn+=wlEarn(e);
+    totals[key].count++;
+  });
+  return totals;
+}
+function renderWorklogInsight(){
+  nb({back:{fn:'pop()',label:'Wstecz'},title:'Godziny pracy'});
+  const totals=worklogMonthlyTotals();
+  const keys=Object.keys(totals).sort((a,b)=>b.localeCompare(a));
+  let html='<div class="sp">';
+  if(!keys.length){
+    html+=`<div class="empty">
+      <div class="empty-icon" style="width:64px;height:64px;display:inline-flex;align-items:center;justify-content:center;color:var(--blue)">${icon('calendar',34)}</div>
+      <div class="empty-title">Brak danych o godzinach</div>
+      <p class="empty-sub">Nie znaleziono na tym urządzeniu zapisanych godzin z aplikacji WorkLog. Dodaj przychód ręcznie albo zarejestruj godziny w WorkLog.</p>
+      <button class="big-btn big-btn-green" onclick="push('f-income',{monthKey:'${curMonthKey()}'})">+ Dodaj przychód ręcznie</button>
+    </div>`;
+  } else {
+    html+='<p class="sh">Godziny i zarobki wg miesiąca</p><div class="card">';
+    keys.forEach(k=>{
+      const t=totals[k];
+      const hrs=t.minutes/60;
+      const hrsLabel=`${Math.floor(hrs)}h ${Math.round((hrs%1)*60)}min`;
+      html+=`<div class="row">
+        <div class="rm"><div class="rt">${monthLabel(k)}</div><div class="rmeta">${t.count} wpisów · ${hrsLabel}</div></div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:16px;font-weight:700;color:var(--green)">${fmtMoneyAbs(t.earn)}</span>
+          <button class="nb-btn bold" style="padding:4px 6px" onclick="pullWorklogMonth('${k}',${t.earn.toFixed(2)})">Pobierz</button>
+        </div>
+      </div>`;
+    });
+    html+=`</div>
+    <div style="padding:12px 16px 0">
+      <button class="big-btn" style="width:100%" onclick="push('f-income',{monthKey:'${curMonthKey()}'})">+ Dodaj przychód ręcznie</button>
+    </div>`;
+  }
+  html+='</div>';
+  document.getElementById('sc').innerHTML=html;
+  animateCountUps();
+}
+function pullWorklogMonth(key,earn){
+  showConfirm(`Dodać <strong>${fmtMoneyAbs(earn)}</strong> jako przychód „Godziny pracy” do miesiąca <strong>${monthLabel(key)}</strong>?`,()=>{
+    const m=ensureMonth(key);
+    m.income.push({id:gid(),name:'Godziny pracy',amount:earn,date:`${key}-01`,note:'Zaimportowano z WorkLog'});
+    save();
+    showToast('Dodano przychód ✓');
+    push('month',{key,tab:'income'});
+  },{title:'Dodaj jako przychód',confirmLabel:'Dodaj do przychodów'});
+}
+
 function renderSettings(){
   nb({back:{fn:'pop()',label:'Wstecz'},title:'Ustawienia'});
   document.getElementById('sc').innerHTML=`
@@ -1586,6 +1998,18 @@ function renderSettings(){
         <span style="width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;margin-right:12px;color:var(--text2)">${ICO_TAG}</span>
         <span style="font-size:16px;color:var(--text);flex:1">Zarządzaj kategoriami</span>
         <div class="chev">${ICO_CHEV}</div>
+      </div>
+    </div>
+    <p class="sh">Bezpieczeństwo</p>
+    <div class="card">
+      <div class="row tap" onclick="push('change-pin',{})">
+        <span style="width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;margin-right:12px;color:var(--text2)">${icon('lock',18)}</span>
+        <span style="font-size:16px;color:var(--text);flex:1">Zmień PIN</span>
+        <div class="chev">${ICO_CHEV}</div>
+      </div>
+      <div class="row tap" onclick="logout()">
+        <span style="width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;margin-right:12px;color:var(--red)">${icon('logout',18)}</span>
+        <span style="font-size:17px;color:var(--red)">Wyloguj się</span>
       </div>
     </div>
     <p class="sh">Dane</p>
@@ -1622,9 +2046,10 @@ function exportCSV(){
   URL.revokeObjectURL(url);showToast('CSV gotowy ✓');
 }
 function clearAll(){
-  if(!confirm('Usunąć wszystkie dane? Tego nie można cofnąć.'))return;
-  D={categories:[...DEF_CATS],months:{}};save();
-  showToast('Dane usunięte');pop();
+  showConfirm('Usunąć wszystkie dane? Tego nie można cofnąć.',()=>{
+    D={categories:[...DEF_CATS],months:{}};save();
+    showToast('Dane usunięte');pop();
+  },{title:'Usuń wszystkie dane',confirmLabel:'Usuń wszystko',danger:true});
 }
 
 /* ══ ADD MENU ══ */
@@ -1648,6 +2073,23 @@ function showAddMenu(key){
 }
 
 /* ══ MODAL ══ */
+let _confirmCb=null;
+function showConfirm(message,onConfirm,opts={}){
+  _confirmCb=onConfirm;
+  document.getElementById('msh').innerHTML=`
+    <div class="sh-handle"></div>
+    <div class="sh-title">${opts.title||'Czy na pewno?'}</div>
+    <p style="text-align:center;color:var(--text2);font-size:15px;line-height:1.5;margin:0 0 18px;padding:0 6px">${message}</p>
+    <button class="big-btn ${opts.danger?'big-btn-red':'big-btn-green'}" style="width:100%;margin-bottom:10px" onclick="runConfirm()">${opts.confirmLabel||'Potwierdź'}</button>
+    <button class="sh-cancel" onclick="closeMod()">Anuluj</button>`;
+  document.getElementById('modal').classList.add('open');
+}
+function runConfirm(){
+  const cb=_confirmCb;
+  document.getElementById('modal').classList.remove('open');
+  _confirmCb=null;
+  if(cb)cb();
+}
 function closeMod(e){
   if(!e||e.target===document.getElementById('modal'))
     document.getElementById('modal').classList.remove('open');
@@ -1766,6 +2208,8 @@ const ICON_PATHS={
   chart:'<line x1="5" y1="20" x2="5" y2="11"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="19" y1="20" x2="19" y2="14"/><line x1="2.2" y1="20" x2="21.8" y2="20"/>',
   trash:'<path d="M3.5 6.5h17M8.5 6.5v-2a2 2 0 012-2h3a2 2 0 012 2v2m3 0l-1 13.5a2 2 0 01-2 2h-8a2 2 0 01-2-2l-1-13.5h13z"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>',
   wallet:'<path d="M3.5 7a2 2 0 012-2h11a2 2 0 012 2v10a2 2 0 01-2 2h-11a2 2 0 01-2-2V7z"/><path d="M16 12h3.5a1 1 0 011 1v2a1 1 0 01-1 1H16a2 2 0 010-4z"/>',
+  lock:'<rect x="5" y="10.5" width="14" height="9.5" rx="2"/><path d="M8 10.5V7a4 4 0 018 0v3.5"/>',
+  logout:'<path d="M15.5 4H7.5a2 2 0 00-2 2v12a2 2 0 002 2h8"/><path d="M11 12h10M17.5 8.5L21 12l-3.5 3.5"/>',
 };
 function icon(key,size=20,sw=2){
   return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">${ICON_PATHS[key]||ICON_PATHS.box}</svg>`;
@@ -1813,11 +2257,17 @@ const LOGO_SVG_ANIMATED=`<svg width="150" height="46" viewBox="0 0 150 46" xmlns
 /* ══ INIT ══ */
 load();
 history.replaceState({i:0},'','');
-if(!S._setup){
-  showOnboarding();
+if(!S.pinHash){
+  showPinSetup();
+} else if(sessionStorage.getItem(LOGIN_SESSION_KEY)==='1'){
+  if(!S._setup){
+    showOnboarding();
+  } else {
+    stack=[{sc:'months',p:{}}];
+    render('months',{},'push');
+  }
 } else {
-  stack=[{sc:'months',p:{}}];
-  render('months',{},'push');
+  showLogin();
 }
 </script>
 </body>
