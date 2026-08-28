@@ -41,15 +41,19 @@ button{cursor:pointer;border:none;background:none}
   flex:1;text-align:center;padding:0 8px}
 .nb-large{font-size:34px;font-weight:700;color:var(--text);padding:4px 16px 12px;
   display:flex;justify-content:center;align-items:center}
-/* ── LOGO "SELF-WRITING" INTRO ── */
+/* ── LOGO "SELF-WRITING" INTRO — letters draw in one after another ── */
 @keyframes logoDraw{to{stroke-dashoffset:0}}
 @keyframes logoFillIn{to{fill-opacity:1}}
-#logoWriteText{
-  animation:logoDraw 1.15s cubic-bezier(.65,0,.35,1) forwards,
-             logoFillIn .5s ease forwards .8s;
+.logo-letter{
+  fill:#fff;fill-opacity:0;stroke:#fff;stroke-width:1;
+  stroke-dasharray:60;stroke-dashoffset:60;
+  animation-name:logoDraw,logoFillIn;
+  animation-duration:.75s,.4s;
+  animation-timing-function:cubic-bezier(.65,0,.35,1),ease;
+  animation-fill-mode:forwards,forwards;
 }
 @media(prefers-reduced-motion:reduce){
-  #logoWriteText{animation:none;fill-opacity:1;stroke-dashoffset:0}
+  .logo-letter{animation:none;fill-opacity:1;stroke-dashoffset:0}
 }
 .nb-btn{color:var(--blue);font-size:17px;padding:6px 10px;display:flex;
   align-items:center;gap:3px;min-width:56px;transition:opacity .15s;white-space:nowrap}
@@ -1784,16 +1788,24 @@ const LOGO_SVG_STATIC=`<svg width="150" height="46" viewBox="0 0 150 46" xmlns="
   <text x="75" y="32" text-anchor="middle" filter="url(#lgShadowS)" ${LOGO_FONT} fill="#fff">Budgy</text>
 </svg>`;
 
-/* Animated: the wordmark "writes itself" on launch — outline draws in, then fills solid white */
+/* Animated: the wordmark "writes itself" on launch — each letter draws its
+   outline in turn, then fills solid white, cascading left to right */
+const LOGO_TEXT='Budgy';
+const LOGO_LETTER_STAGGER=0.22; // seconds between each letter's draw start
+const LOGO_DRAW_DUR=0.75; // how long each letter's outline takes to draw
+const LOGO_EMPTY_PAUSE=0.35; // extra time the letter sits outlined-but-unfilled before it fills in
+const LOGO_TSPANS=LOGO_TEXT.split('').map((ch,i)=>{
+  const drawDelay=(i*LOGO_LETTER_STAGGER).toFixed(2);
+  const fillDelay=(i*LOGO_LETTER_STAGGER+LOGO_DRAW_DUR+LOGO_EMPTY_PAUSE).toFixed(2);
+  return `<tspan class="logo-letter" style="animation-delay:${drawDelay}s,${fillDelay}s">${ch}</tspan>`;
+}).join('');
 const LOGO_SVG_ANIMATED=`<svg width="150" height="46" viewBox="0 0 150 46" xmlns="http://www.w3.org/2000/svg" style="display:block">
   <defs>
     <filter id="lgShadowA" x="-40%" y="-40%" width="180%" height="180%">
       <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#000" flood-opacity="0.18"/>
     </filter>
   </defs>
-  <text id="logoWriteText" x="75" y="32" text-anchor="middle" filter="url(#lgShadowA)" ${LOGO_FONT}
-    fill="#fff" fill-opacity="0" stroke="#fff" stroke-width="1"
-    stroke-dasharray="480" stroke-dashoffset="480">Budgy</text>
+  <text id="logoWriteText" x="75" y="32" text-anchor="middle" filter="url(#lgShadowA)" ${LOGO_FONT}>${LOGO_TSPANS}</text>
 </svg>`;
 
 /* ══ INIT ══ */
